@@ -148,7 +148,7 @@ export function Relatorios() {
     doc.setFillColor(6, 182, 212)
     doc.rect(0, 0, doc.internal.pageSize.getWidth(), 3, 'F')
     linha('Relatório — Vida', 18, true)
-    linha(`Período: ${periodo} · gerado em ${new Date().toLocaleDateString('pt-BR')}`, 10, false, [100, 116, 139])
+    linha(`Período: ${periodo} · gerado em ${new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`, 10, false, [100, 116, 139])
     espaco(4)
 
     linha('Saldo mensal', 13, true)

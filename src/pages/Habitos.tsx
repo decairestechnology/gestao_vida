@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from '../lib/api'
-import { hojeBrasilia, deslocarDias } from '../lib/date'
+import { hojeBrasilia, deslocarDias, formatarDataBR } from '../lib/date'
 
 interface Habito {
   id: string
@@ -149,7 +149,7 @@ export function Habitos() {
                   <button
                     key={d}
                     onClick={() => alternarDia(h.id, d)}
-                    title={new Date(d).toLocaleDateString('pt-BR')}
+                    title={formatarDataBR(d)}
                     className="w-5 h-5 rounded-[5px] transition-colors"
                     style={{ background: h.checks.includes(d) ? 'var(--secondary)' : 'var(--muted)' }}
                   />

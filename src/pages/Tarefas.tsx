@@ -7,7 +7,7 @@ import { Badge } from '../components/ui/Badge'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
-import { hojeBrasilia, deslocarDias } from '../lib/date'
+import { hojeBrasilia, deslocarDias, formatarDataBR } from '../lib/date'
 
 interface Tarefa {
   id: string
@@ -196,7 +196,7 @@ export function Tarefas() {
                     )}
                     {t.vencimento && (
                       <span className="text-[11.5px] text-muted-foreground">
-                        vence {new Date(t.vencimento).toLocaleDateString('pt-BR')}
+                        vence {formatarDataBR(t.vencimento)}
                       </span>
                     )}
                   </div>

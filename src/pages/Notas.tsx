@@ -168,7 +168,7 @@ export function Notas() {
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{n.tag}</span>
               )}
               <div className="text-[10.5px] text-muted-foreground font-semibold ml-auto">
-                {new Date(n.created_at).toLocaleDateString('pt-BR')}
+                {new Date(n.created_at).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
               </div>
             </div>
             <button onClick={() => navigate('/tarefas')} className="mt-2.5 text-left text-[11px] font-bold text-primary">

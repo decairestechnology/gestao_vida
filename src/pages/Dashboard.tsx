@@ -68,7 +68,7 @@ export function Dashboard() {
   const notasFixadas = notas.filter((n) => n.pinned).slice(0, 3)
   const metasAndamento = metas.filter((m) => !m.concluida).slice(0, 3)
 
-  const dataFormatada = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
+  const dataFormatada = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', timeZone: 'America/Sao_Paulo' })
 
   return (
     <div>

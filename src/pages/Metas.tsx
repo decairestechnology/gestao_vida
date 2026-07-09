@@ -8,6 +8,7 @@ import { ProgressBar } from '../components/ui/ProgressBar'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
+import { formatarDataBR } from '../lib/date'
 
 interface Meta {
   id: string
@@ -129,7 +130,7 @@ export function Metas() {
               </div>
               <div className="text-2xl font-extrabold">R$ {atual.toLocaleString('pt-BR')}</div>
               <div className="text-[11.5px] text-muted-foreground mt-1 mb-2.5">
-                {m.concluida ? 'meta concluída' : m.prazo ? `meta: R$ ${alvo.toLocaleString('pt-BR')} até ${new Date(m.prazo).toLocaleDateString('pt-BR')}` : `meta: R$ ${alvo.toLocaleString('pt-BR')}`}
+                {m.concluida ? 'meta concluída' : m.prazo ? `meta: R$ ${alvo.toLocaleString('pt-BR')} até ${formatarDataBR(m.prazo)}` : `meta: R$ ${alvo.toLocaleString('pt-BR')}`}
               </div>
               <ProgressBar percent={(atual / alvo) * 100} color={m.concluida ? '#10B981' : CORES[i % CORES.length]} />
               <div className="flex justify-between items-center mt-3 flex-wrap gap-1.5">

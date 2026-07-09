@@ -15,3 +15,12 @@ export function deslocarDias(dataISO: string, dias: number): string {
   dt.setUTCDate(dt.getUTCDate() + dias)
   return dt.toISOString().slice(0, 10)
 }
+
+// Formata uma data-só (YYYY-MM-DD, sem hora) pra DD/MM/AAAA sem NUNCA passar
+// por `new Date(string)` — isso é o que causa o erro clássico de "um dia a menos"
+// (o navegador lê a string como UTC meia-noite e ao exibir no fuso de Brasília
+// isso volta pro dia anterior). Aqui é só reordenar o texto, sem fuso nenhum envolvido.
+export function formatarDataBR(dataISO: string): string {
+  const [y, m, d] = dataISO.slice(0, 10).split('-')
+  return `${d}/${m}/${y}`
+}

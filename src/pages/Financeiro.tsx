@@ -10,7 +10,7 @@ import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
 import { orcamentoCategorias } from '../data/mockData'
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from '../data/categorias'
-import { hojeBrasilia } from '../lib/date'
+import { hojeBrasilia, formatarDataBR } from '../lib/date'
 
 const TIPOS_CONTA = [
   { id: 'corrente', label: 'Conta corrente', icon: Landmark, bg: 'var(--accent)', color: 'var(--primary)' },
@@ -254,7 +254,7 @@ export function Financeiro() {
             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--secondary)' }} />
             <div className="flex-1">
               <div className="text-[13.5px] font-semibold">{r.titulo}</div>
-              <div className="text-[11.5px] text-muted-foreground">a cada {r.recorrencia_intervalo_dias} dias · próxima em {new Date(r.data).toLocaleDateString('pt-BR')}</div>
+              <div className="text-[11.5px] text-muted-foreground">a cada {r.recorrencia_intervalo_dias} dias · próxima em {formatarDataBR(r.data)}</div>
             </div>
             <div className="text-[13px] font-bold">R$ {Math.abs(Number(r.valor)).toLocaleString('pt-BR')}</div>
           </div>
