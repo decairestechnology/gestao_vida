@@ -1,6 +1,6 @@
 # Vida — DeCaires Ecosystem
 
-Sistema pessoal de controle (financeiro, investimentos, tarefas, hábitos, notas, metas, relatórios), seguindo o guia de marca e a stack padrão da DeCaires: React + Vite + TypeScript + Tailwind, Neon (Postgres), Firebase Auth, API da Claude pra captura por texto.
+Sistema pessoal de controle (financeiro, investimentos, tarefas, hábitos, notas, metas, relatórios), seguindo o guia de marca e a stack padrão da DeCaires: React + Vite + TypeScript + Tailwind, Neon (Postgres), Firebase Auth, API da Claude pra captura por texto.  
 
 ## 1. Criar os serviços (uma vez só)
 
