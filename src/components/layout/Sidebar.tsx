@@ -4,6 +4,7 @@ import {
   FileText, Target, BarChart3, Settings, X,
 } from 'lucide-react'
 import { clsx } from '../../lib/clsx'
+import { useMarca } from '../../context/MarcaContext'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: Gauge, end: true },
@@ -23,6 +24,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ aberta, fechar }: SidebarProps) {
+  const { marca } = useMarca()
+
   return (
     <>
       {/* Fundo escurecido atrás do menu no celular/tablet */}
@@ -45,12 +48,12 @@ export function Sidebar({ aberta, fechar }: SidebarProps) {
         </button>
 
         <div className="flex flex-col items-center gap-1.5 px-2 pb-5 pt-1.5">
-          <div className="w-[72px] h-[72px] rounded-2xl overflow-hidden flex-shrink-0">
-            <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+          <div style={{ width: marca.logoTamanho, height: marca.logoTamanho }} className="rounded-2xl overflow-hidden flex-shrink-0">
+            <img src={marca.logoUrl ?? '/logo.png'} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div className="text-center leading-tight">
-            <div className="font-bold text-sm">DeCaires</div>
-            <div className="text-[10.5px] text-muted-foreground font-semibold">Gestão Pessoal</div>
+            <div className="font-bold text-sm">{marca.nome}</div>
+            <div className="text-[10.5px] text-muted-foreground font-semibold">{marca.subtitulo}</div>
           </div>
         </div>
 

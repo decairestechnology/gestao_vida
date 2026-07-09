@@ -2,8 +2,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { requireUser } from './_auth.js'
 import { sql } from './_db.js'
 
-// GET    /api/config → { tema, categorias: [{id, nome, tipo}] }
-// POST   /api/config → body { recurso: 'tema', tema } OU { recurso: 'categoria', nome, tipo }
+// GET    /api/config → { tema, marca: {nome, subtitulo, logoUrl, logoTamanho}, categorias: [...] }
+// POST   /api/config → body { recurso: 'tema', tema }
+//                    OU { recurso: 'categoria', nome, tipo }
+//                    OU { recurso: 'marca', nome, subtitulo, logoUrl, logoTamanho }
 // DELETE /api/config → remove categoria personalizada (body: { id })
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   let userId: string
@@ -15,11 +17,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'GET') {
     const [prefs, categorias] = await Promise.all([
-      sql`select tema from preferencias where user_id = ${userId}`,
+      sql`select tema, marca_nome, marca_subtitulo, marca_logo_url, marca_logo_tamanho from preferencias where user_id = ${userId}`,
       sql`select id, nome, tipo from categorias_personalizadas where user_id = ${userId} order by nome asc`,
     ])
+    const p = prefs[0]
     return res.status(200).json({
-      tema: prefs[0]?.tema ?? null,
+      tema: p?.tema ?? null,
+      marca: {
+        nome: p?.marca_nome ?? 'DeCaires',
+        subtitulo: p?.marca_subtitulo ?? 'Gestão Pessoal',
+        logoUrl: p?.marca_logo_url ?? null,
+        logoTamanho: p?.marca_logo_tamanho ?? 72,
+      },
       categorias,
     })
   }
@@ -35,6 +44,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         on conflict (user_id) do update set tema = excluded.tema, updated_at = now()
       `
       return res.status(200).json({ tema })
+    }
+
+    if (recurso === 'marca') {
+      const { nome, subtitulo, logoUrl, logoTamanho } = req.body
+      await sql`
+        insert into preferencias (user_id, marca_nome, marca_subtitulo, marca_logo_url, marca_logo_tamanho)
+        values (${userId}, ${nome ?? 'DeCaires'}, ${subtitulo ?? 'Gestão Pessoal'}, ${logoUrl ?? null}, ${logoTamanho ?? 72})
+        on conflict (user_id) do update set
+          marca_nome = excluded.marca_nome,
+          marca_subtitulo = excluded.marca_subtitulo,
+          marca_logo_url = excluded.marca_logo_url,
+          marca_logo_tamanho = excluded.marca_logo_tamanho,
+          updated_at = now()
+      `
+      return res.status(200).json({ nome, subtitulo, logoUrl, logoTamanho })
     }
 
     if (recurso === 'categoria') {

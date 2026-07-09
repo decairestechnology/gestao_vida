@@ -9,6 +9,7 @@ import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from '../lib/api'
 import { hojeBrasilia } from '../lib/date'
+import { Valor } from '../components/ui/Valor'
 
 interface Ativo {
   id: string
@@ -153,7 +154,7 @@ export function Investimentos() {
       <div className="grid grid-cols-3 gap-4 mb-4">
         <Card>
           <CardTitle>Patrimônio investido</CardTitle>
-          <div className="text-2xl font-extrabold">R$ {patrimonioTotal.toLocaleString('pt-BR')}</div>
+          <Valor valor={patrimonioTotal} className="text-2xl font-extrabold block" />
         </Card>
         <Card>
           <CardTitle>Ativos cadastrados</CardTitle>

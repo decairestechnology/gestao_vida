@@ -7,6 +7,7 @@ import { Badge } from '../components/ui/Badge'
 import { ProgressBar } from '../components/ui/ProgressBar'
 import { apiGet, apiPatch } from '../lib/api'
 import { hojeBrasilia, deslocarDias } from '../lib/date'
+import { Valor } from '../components/ui/Valor'
 import type { DashboardData } from '../types/dashboard'
 
 const PRIORIDADE_BADGE = { alta: 'error', media: 'warning', baixa: 'neutral' } as const
@@ -90,13 +91,11 @@ export function Dashboard() {
       <div className="grid grid-cols-4 gap-4 mb-4">
         <Card>
           <CardTitle>Saldo do mês</CardTitle>
-          <div className="text-2xl font-extrabold" style={{ color: saldoMes < 0 ? 'var(--destructive)' : undefined }}>
-            R$ {saldoMes.toLocaleString('pt-BR')}
-          </div>
+          <Valor valor={saldoMes} className="text-2xl font-extrabold block" style={{ color: saldoMes < 0 ? 'var(--destructive)' : undefined }} />
         </Card>
         <Card>
           <CardTitle>Patrimônio total</CardTitle>
-          <div className="text-2xl font-extrabold">R$ {patrimonioTotal.toLocaleString('pt-BR')}</div>
+          <Valor valor={patrimonioTotal} className="text-2xl font-extrabold block" />
           <div className="text-xs font-semibold text-muted-foreground mt-1">caixa + investido</div>
         </Card>
         <Card>
@@ -145,9 +144,12 @@ export function Dashboard() {
                 <div className="text-[13.5px] font-semibold">{l.titulo}</div>
                 <div className="text-[11.5px] text-muted-foreground">{l.categoria}</div>
               </div>
-              <div className="text-[13px] font-bold" style={{ color: Number(l.valor) < 0 ? 'var(--destructive)' : '#10B981' }}>
-                {Number(l.valor) < 0 ? '− ' : '+ '}R$ {Math.abs(Number(l.valor))}
-              </div>
+              <Valor
+                valor={Math.abs(Number(l.valor))}
+                prefixo={Number(l.valor) < 0 ? '− ' : '+ '}
+                className="text-[13px] font-bold"
+                style={{ color: Number(l.valor) < 0 ? 'var(--destructive)' : '#10B981' }}
+              />
             </div>
           ))}
         </Card>
@@ -193,7 +195,7 @@ export function Dashboard() {
             <CardTitle className="mb-0">Patrimônio investido</CardTitle>
             <button onClick={() => navigate('/investimentos')} className="text-muted-foreground hover:text-primary flex-shrink-0"><ChevronRight size={14} /></button>
           </div>
-          <div className="text-xl font-extrabold">R$ {patrimonioInvestido.toLocaleString('pt-BR')}</div>
+          <Valor valor={patrimonioInvestido} className="text-xl font-extrabold block" />
           <div className="text-xs font-semibold text-muted-foreground mt-1">{ativos.length} ativo{ativos.length !== 1 ? 's' : ''} cadastrado{ativos.length !== 1 ? 's' : ''}</div>
         </Card>
       </div>

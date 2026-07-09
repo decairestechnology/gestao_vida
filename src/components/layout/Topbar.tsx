@@ -1,7 +1,8 @@
 import { useState, type KeyboardEvent } from 'react'
-import { Sparkles, Sun, Moon, LogOut, Loader2, Menu } from 'lucide-react'
+import { Sparkles, Sun, Moon, LogOut, Loader2, Menu, Eye, EyeOff } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
+import { usePrivacidade } from '../../context/PrivacidadeContext'
 
 const LABELS_ENTIDADE: Record<string, string> = {
   transacao: 'lançamento',
@@ -21,6 +22,7 @@ interface TopbarProps {
 export function Topbar({ onAbrirMenu }: TopbarProps) {
   const { theme, toggleTheme } = useTheme()
   const { logout, getToken } = useAuth()
+  const { valoresOcultos, alternar: alternarPrivacidade } = usePrivacidade()
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -91,6 +93,14 @@ export function Topbar({ onAbrirMenu }: TopbarProps) {
           {feedback ?? 'Scout classifica'}
         </span>
       </div>
+
+      <button
+        onClick={alternarPrivacidade}
+        title={valoresOcultos ? 'Mostrar valores' : 'Ocultar valores'}
+        className="w-[34px] h-[34px] rounded-full border border-border bg-muted flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-primary transition-colors flex-shrink-0"
+      >
+        {valoresOcultos ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
 
       <button
         onClick={toggleTheme}

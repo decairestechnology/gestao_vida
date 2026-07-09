@@ -1,14 +1,33 @@
-import { useState, type FormEvent } from 'react'
-import { Sun, Moon, Trash2, Plus } from 'lucide-react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Sun, Moon, Trash2, Plus, Eye, EyeOff } from 'lucide-react'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { useTheme } from '../context/ThemeContext'
 import { useCategorias } from '../context/CategoriasContext'
+import { useMarca } from '../context/MarcaContext'
+import { usePrivacidade } from '../context/PrivacidadeContext'
 
 export function Configuracoes() {
   const { theme, toggleTheme } = useTheme()
   const { categoriasDespesa, categoriasReceita, personalizadas, carregando, adicionar, remover } = useCategorias()
+  const { marca, atualizar: atualizarMarca } = useMarca()
+  const { valoresOcultos, alternar: alternarPrivacidade } = usePrivacidade()
+
+  const [formMarca, setFormMarca] = useState(marca)
+  const [salvandoMarca, setSalvandoMarca] = useState(false)
+
+  useEffect(() => setFormMarca(marca), [marca])
+
+  async function salvarMarca(e: FormEvent) {
+    e.preventDefault()
+    setSalvandoMarca(true)
+    try {
+      await atualizarMarca(formMarca)
+    } finally {
+      setSalvandoMarca(false)
+    }
+  }
 
   const [nome, setNome] = useState('')
   const [tipo, setTipo] = useState<'despesa' | 'receita'>('despesa')
@@ -52,7 +71,75 @@ export function Configuracoes() {
         </Card>
 
         <Card>
-          <CardTitle>Nova categoria</CardTitle>
+          <CardTitle>Privacidade</CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm font-semibold">Valores {valoresOcultos ? 'ocultos' : 'visíveis'}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Esconde os números de dinheiro na tela — útil se alguém estiver por perto.</div>
+            </div>
+            <button
+              onClick={alternarPrivacidade}
+              className="w-10 h-10 rounded-full border border-border bg-muted flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-primary transition-colors flex-shrink-0"
+            >
+              {valoresOcultos ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
+        </Card>
+      </div>
+
+      <Card className="mt-4">
+        <CardTitle>Marca do sistema</CardTitle>
+        <form onSubmit={salvarMarca} className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">Nome</label>
+            <input
+              value={formMarca.nome}
+              onChange={(e) => setFormMarca({ ...formMarca, nome: e.target.value })}
+              className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">Subtítulo</label>
+            <input
+              value={formMarca.subtitulo}
+              onChange={(e) => setFormMarca({ ...formMarca, subtitulo: e.target.value })}
+              className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">URL da logo (opcional — deixa vazio pra usar a padrão)</label>
+            <input
+              value={formMarca.logoUrl ?? ''}
+              onChange={(e) => setFormMarca({ ...formMarca, logoUrl: e.target.value || null })}
+              placeholder="https://..."
+              className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+              Tamanho da logo: {formMarca.logoTamanho}px
+            </label>
+            <input
+              type="range"
+              min={32}
+              max={140}
+              step={4}
+              value={formMarca.logoTamanho}
+              onChange={(e) => setFormMarca({ ...formMarca, logoTamanho: Number(e.target.value) })}
+              className="w-full"
+            />
+          </div>
+          <div className="col-span-2 flex items-center gap-4">
+            <div style={{ width: formMarca.logoTamanho, height: formMarca.logoTamanho }} className="rounded-2xl overflow-hidden border border-border flex-shrink-0">
+              <img src={formMarca.logoUrl || '/logo.png'} alt="Pré-visualização" className="w-full h-full object-contain" />
+            </div>
+            <Button type="submit" disabled={salvandoMarca}>{salvandoMarca ? 'Salvando...' : 'Salvar marca'}</Button>
+          </div>
+        </form>
+      </Card>
+
+      <Card className="mt-4">
+        <CardTitle>Nova categoria</CardTitle>
           <form onSubmit={onSubmit} className="flex flex-col gap-2.5">
             <div className="flex gap-2">
               <button type="button" onClick={() => setTipo('despesa')}
@@ -78,7 +165,6 @@ export function Configuracoes() {
             {erro && <div className="text-xs text-destructive font-semibold">{erro}</div>}
           </form>
         </Card>
-      </div>
 
       <div className="grid grid-cols-2 gap-4 mt-4">
         <Card>

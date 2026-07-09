@@ -8,6 +8,7 @@ import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
 import { useCategorias } from '../context/CategoriasContext'
 import { hojeBrasilia } from '../lib/date'
+import { Valor } from '../components/ui/Valor'
 
 const TIPOS_CONTA = [
   { id: 'corrente', label: 'Conta corrente', icon: Landmark, bg: 'var(--accent)', color: 'var(--primary)' },
@@ -225,9 +226,7 @@ export function ContaDetalhe() {
           <div className="grid grid-cols-3 gap-4 mb-4">
             <Card>
               <CardTitle>Saldo atual</CardTitle>
-              <div className="text-2xl font-extrabold" style={{ color: saldoAtual < 0 ? 'var(--destructive)' : undefined }}>
-                R$ {saldoAtual.toLocaleString('pt-BR')}
-              </div>
+<Valor valor={saldoAtual} className="text-2xl font-extrabold block" style={{ color: saldoAtual < 0 ? 'var(--destructive)' : undefined }} />
             </Card>
             <Card>
               <CardTitle>Lançamentos</CardTitle>

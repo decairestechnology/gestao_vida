@@ -11,6 +11,7 @@ import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
 
 import { useCategorias } from '../context/CategoriasContext'
 import { hojeBrasilia, formatarDataBR } from '../lib/date'
+import { Valor } from '../components/ui/Valor'
 
 const TIPOS_CONTA = [
   { id: 'corrente', label: 'Conta corrente', icon: Landmark, bg: 'var(--accent)', color: 'var(--primary)' },
@@ -269,9 +270,7 @@ export function Financeiro() {
                 </button>
               </div>
 
-              <div className="text-2xl font-extrabold mb-2" style={{ color: totalTipo < 0 ? 'var(--destructive)' : undefined }}>
-                R$ {totalTipo.toLocaleString('pt-BR')}
-              </div>
+<Valor valor={totalTipo} className="text-2xl font-extrabold mb-2 block" style={{ color: totalTipo < 0 ? 'var(--destructive)' : undefined }} />
 
               {contasDoTipo.length === 0 && (
                 <div className="text-xs text-muted-foreground py-1">Nenhuma conta desse tipo ainda.</div>
@@ -290,9 +289,7 @@ export function Financeiro() {
                         <div className="text-[10.5px] text-muted-foreground">fecha {c.fechamento_dia ?? '—'} · limite R$ {Number(c.limite).toLocaleString('pt-BR')}</div>
                       )}
                     </div>
-                    <div className="text-[12.5px] font-bold flex-shrink-0" style={{ color: saldoAtual < 0 ? 'var(--destructive)' : undefined }}>
-                      R$ {saldoAtual.toLocaleString('pt-BR')}
-                    </div>
+<Valor valor={saldoAtual} className="text-[12.5px] font-bold flex-shrink-0" style={{ color: saldoAtual < 0 ? 'var(--destructive)' : undefined }} />
                   </button>
                 )
               })}
@@ -321,21 +318,21 @@ export function Financeiro() {
       <div className="grid grid-cols-3 gap-4 mb-4">
         <Card>
           <CardTitle>Receitas do mês</CardTitle>
-          <div className="text-2xl font-extrabold text-[#10B981]">
-            R$ {transacoesRealizadas.filter((t) => Number(t.valor) > 0).reduce((s, t) => s + Number(t.valor), 0).toLocaleString('pt-BR')}
-          </div>
+          <Valor
+            valor={transacoesRealizadas.filter((t) => Number(t.valor) > 0).reduce((s, t) => s + Number(t.valor), 0)}
+            className="text-2xl font-extrabold text-[#10B981] block"
+          />
         </Card>
         <Card>
           <CardTitle>Despesas do mês</CardTitle>
-          <div className="text-2xl font-extrabold text-destructive">
-            R$ {Math.abs(transacoesRealizadas.filter((t) => Number(t.valor) < 0).reduce((s, t) => s + Number(t.valor), 0)).toLocaleString('pt-BR')}
-          </div>
+          <Valor
+            valor={Math.abs(transacoesRealizadas.filter((t) => Number(t.valor) < 0).reduce((s, t) => s + Number(t.valor), 0))}
+            className="text-2xl font-extrabold text-destructive block"
+          />
         </Card>
         <Card>
           <CardTitle>Saldo do período</CardTitle>
-          <div className="text-2xl font-extrabold">
-            R$ {transacoesRealizadas.reduce((s, t) => s + Number(t.valor), 0).toLocaleString('pt-BR')}
-          </div>
+<Valor valor={transacoesRealizadas.reduce((s, t) => s + Number(t.valor), 0)} className="text-2xl font-extrabold block" />
         </Card>
       </div>
 
@@ -387,9 +384,12 @@ export function Financeiro() {
                       {t.categoria}{conta ? ` · ${conta.nome}` : ''}{t.descricao ? ` · ${t.descricao}` : ''}{agendado ? ` · ${formatarDataBR(t.data)}` : ''}
                     </div>
                   </div>
-                  <div className="text-[13px] font-bold" style={{ color: agendado ? 'var(--muted-foreground)' : Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }}>
-                    {Number(t.valor) < 0 ? '− ' : '+ '}R$ {Math.abs(Number(t.valor))}
-                  </div>
+                  <Valor
+                    valor={Math.abs(Number(t.valor))}
+                    prefixo={Number(t.valor) < 0 ? '− ' : '+ '}
+                    className="text-[13px] font-bold"
+                    style={{ color: agendado ? 'var(--muted-foreground)' : Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }}
+                  />
                   <button onClick={() => abrirEditar(t)} className="text-muted-foreground hover:text-primary flex-shrink-0"><Pencil size={14} /></button>
                   <button onClick={() => setConfirmandoExclusao(t.id)} className="text-muted-foreground hover:text-destructive flex-shrink-0"><Trash2 size={14} /></button>
                 </div>

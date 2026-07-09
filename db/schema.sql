@@ -145,5 +145,15 @@ create table if not exists categorias_personalizadas (
 create table if not exists preferencias (
   user_id text primary key,
   tema text not null default 'light' check (tema in ('light', 'dark')),
+  marca_nome text not null default 'DeCaires',
+  marca_subtitulo text not null default 'Gestão Pessoal',
+  marca_logo_url text,
+  marca_logo_tamanho int not null default 72,
   updated_at timestamptz not null default now()
 );
+
+-- Se a tabela já existia antes dessas colunas:
+alter table preferencias add column if not exists marca_nome text not null default 'DeCaires';
+alter table preferencias add column if not exists marca_subtitulo text not null default 'Gestão Pessoal';
+alter table preferencias add column if not exists marca_logo_url text;
+alter table preferencias add column if not exists marca_logo_tamanho int not null default 72;
