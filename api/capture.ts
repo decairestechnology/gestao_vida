@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
-import { requireUser } from './_auth'
-import { sql } from './_db'
+import { requireUser } from './_auth.js'
+import { sql } from './_db.js'
 
 // ANTHROPIC_API_KEY vem do console.anthropic.com → API Keys
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })

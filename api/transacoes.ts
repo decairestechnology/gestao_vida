@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { requireUser } from './_auth'
-import { sql } from './_db'
+import { requireUser } from './_auth.js'
+import { sql } from './_db.js'
 
 // GET    /api/transacoes → lista as transações do usuário logado
 // POST   /api/transacoes → cria uma transação manual
