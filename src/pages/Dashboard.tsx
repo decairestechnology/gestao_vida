@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, ChevronRight } from 'lucide-react'
+import { AlertTriangle, ChevronRight, Pin } from 'lucide-react'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
+import { ProgressBar } from '../components/ui/ProgressBar'
 import { apiGet, apiPatch } from '../lib/api'
 
 interface Transacao { id: string; titulo: string; categoria: string; valor: string | number; data: string }
 interface Tarefa { id: string; titulo: string; status: string; prioridade: 'alta' | 'media' | 'baixa'; vencimento: string | null; parent_id: string | null }
 interface Habito { id: string; nome: string; checks: string[] }
 interface Ativo { valor_atual: string | number }
+interface Nota { id: string; titulo: string; pinned: boolean }
+interface Meta { id: string; nome: string; valor_atual: string | number; valor_alvo: string | number; concluida: boolean }
 
 const PRIORIDADE_BADGE = { alta: 'error', media: 'warning', baixa: 'neutral' } as const
+const CORES_META = ['var(--primary)', 'var(--secondary)', '#F59E0B']
 const hoje = new Date().toISOString().slice(0, 10)
 
 function calcularStreak(checks: string[]): number {
@@ -31,6 +35,8 @@ export function Dashboard() {
   const [tarefas, setTarefas] = useState<Tarefa[]>([])
   const [habitos, setHabitos] = useState<Habito[]>([])
   const [ativos, setAtivos] = useState<Ativo[]>([])
+  const [notas, setNotas] = useState<Nota[]>([])
+  const [metas, setMetas] = useState<Meta[]>([])
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
@@ -39,11 +45,15 @@ export function Dashboard() {
       apiGet<Tarefa[]>('/api/tarefas').catch(() => []),
       apiGet<Habito[]>('/api/habitos').catch(() => []),
       apiGet<{ ativos: Ativo[] }>('/api/investimentos').catch(() => ({ ativos: [] })),
-    ]).then(([t, tf, h, inv]) => {
+      apiGet<Nota[]>('/api/notas').catch(() => []),
+      apiGet<Meta[]>('/api/metas').catch(() => []),
+    ]).then(([t, tf, h, inv, n, m]) => {
       setTransacoes(t)
       setTarefas(tf)
       setHabitos(h)
       setAtivos(inv.ativos)
+      setNotas(n)
+      setMetas(m)
       setCarregando(false)
     })
   }, [])
@@ -63,17 +73,21 @@ export function Dashboard() {
   const tarefasHojeLista = tarefasPrincipais.filter((t) => t.status !== 'concluida' && t.vencimento && t.vencimento.slice(0, 10) <= hoje)
   const tarefasConcluidasHoje = tarefasPrincipais.filter((t) => t.status === 'concluida' && t.vencimento?.slice(0, 10) === hoje).length
   const totalTarefasHoje = tarefasHojeLista.length + tarefasConcluidasHoje
+  const tarefasPendentesTotal = tarefasPrincipais.filter((t) => t.status !== 'concluida').length
 
   const maiorStreak = habitos.reduce((max, h) => Math.max(max, calcularStreak(h.checks)), 0)
   const habitoEmRisco = habitos.find((h) => calcularStreak(h.checks) > 0 && !h.checks.includes(hoje))
+  const habitosFeitosHoje = habitos.filter((h) => h.checks.includes(hoje)).length
 
   const ultimosLancamentos = [...transacoes].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 4)
+  const notasFixadas = notas.filter((n) => n.pinned).slice(0, 3)
+  const metasAndamento = metas.filter((m) => !m.concluida).slice(0, 3)
 
   const dataFormatada = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
 
   return (
     <div>
-      <PageHeader eyebrow={`Hoje · ${dataFormatada}`} title="Visão geral" subtitle="Resumo do seu dia em um lugar só." />
+      <PageHeader eyebrow={`Hoje · ${dataFormatada}`} title="Visão geral" subtitle="Resumo de tudo o que você tem no sistema." />
 
       {habitoEmRisco && (
         <div className="flex items-center gap-3 bg-[#FEF2F2] border border-[#FECACA] rounded-xl px-4 py-3 mb-4">
@@ -103,14 +117,18 @@ export function Dashboard() {
         <Card>
           <CardTitle>Tarefas hoje</CardTitle>
           <div className="text-2xl font-extrabold">{tarefasConcluidasHoje} / {totalTarefasHoje}</div>
+          {tarefasPendentesTotal > totalTarefasHoje && (
+            <div className="text-xs font-semibold text-muted-foreground mt-1">{tarefasPendentesTotal} pendentes no total</div>
+          )}
         </Card>
         <Card>
           <CardTitle>Streak de hábitos</CardTitle>
           <div className="text-2xl font-extrabold">{maiorStreak} dias</div>
+          <div className="text-xs font-semibold text-muted-foreground mt-1">{habitosFeitosHoje}/{habitos.length} feitos hoje</div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <Card>
           <CardTitle>Tarefas de hoje</CardTitle>
           {carregando && <div className="text-sm text-muted-foreground py-4">Carregando...</div>}
@@ -147,6 +165,51 @@ export function Dashboard() {
               </div>
             </div>
           ))}
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <Card>
+          <div className="flex justify-between items-center mb-2.5">
+            <CardTitle className="mb-0">Metas em andamento</CardTitle>
+            <button onClick={() => navigate('/metas')} className="text-muted-foreground hover:text-primary flex-shrink-0"><ChevronRight size={14} /></button>
+          </div>
+          {!carregando && metasAndamento.length === 0 && (
+            <div className="text-sm text-muted-foreground py-3">Nenhuma meta em andamento.</div>
+          )}
+          {metasAndamento.map((m, i) => (
+            <div key={m.id} className="mb-3 last:mb-0">
+              <div className="flex justify-between text-[12.5px] font-semibold">
+                <span className="truncate">{m.nome}</span>
+              </div>
+              <ProgressBar percent={(Number(m.valor_atual) / Number(m.valor_alvo)) * 100} color={CORES_META[i % CORES_META.length]} />
+            </div>
+          ))}
+        </Card>
+
+        <Card>
+          <div className="flex justify-between items-center mb-2.5">
+            <CardTitle className="mb-0">Notas fixadas</CardTitle>
+            <button onClick={() => navigate('/notas')} className="text-muted-foreground hover:text-primary flex-shrink-0"><ChevronRight size={14} /></button>
+          </div>
+          {!carregando && notasFixadas.length === 0 && (
+            <div className="text-sm text-muted-foreground py-3">Nenhuma nota fixada.</div>
+          )}
+          {notasFixadas.map((n) => (
+            <div key={n.id} className="flex items-center gap-2 py-1.5 text-[13px] font-medium">
+              <Pin size={11} className="text-primary flex-shrink-0" />
+              <span className="truncate">{n.titulo}</span>
+            </div>
+          ))}
+        </Card>
+
+        <Card>
+          <div className="flex justify-between items-center mb-2.5">
+            <CardTitle className="mb-0">Patrimônio investido</CardTitle>
+            <button onClick={() => navigate('/investimentos')} className="text-muted-foreground hover:text-primary flex-shrink-0"><ChevronRight size={14} /></button>
+          </div>
+          <div className="text-xl font-extrabold">R$ {patrimonioInvestido.toLocaleString('pt-BR')}</div>
+          <div className="text-xs font-semibold text-muted-foreground mt-1">{ativos.length} ativo{ativos.length !== 1 ? 's' : ''} cadastrado{ativos.length !== 1 ? 's' : ''}</div>
         </Card>
       </div>
     </div>

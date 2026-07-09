@@ -6,20 +6,23 @@ import { sql } from './_db.js'
 // ANTHROPIC_API_KEY vem do console.anthropic.com → API Keys
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
-const SYSTEM_PROMPT = `Você classifica textos curtos em português de um sistema pessoal de controle.
-Dado o texto do usuário, responda APENAS com um JSON (sem markdown, sem texto extra) no formato:
+const SYSTEM_PROMPT = `Você é o Scout, o assistente de captura rápida de um sistema pessoal de controle.
+Dado um texto curto em português, responda APENAS com um JSON (sem markdown, sem texto extra) no formato:
 
 {
-  "tipo": "transacao" | "tarefa" | "nota",
+  "tipo": "transacao" | "tarefa" | "nota" | "indefinido",
   "transacao": { "titulo": string, "categoria": string, "valor": number, "data": "YYYY-MM-DD" } | null,
   "tarefa": { "titulo": string, "tag": string | null, "vencimento": "YYYY-MM-DD" | null, "prioridade": "alta"|"media"|"baixa" } | null,
-  "nota": { "titulo": string, "corpo": string, "tag": string | null } | null
+  "nota": { "titulo": string, "corpo": string, "tag": string | null } | null,
+  "motivo": string | null
 }
 
 Regras:
 - "valor" de transação é negativo para gasto, positivo para receita.
 - Se não houver data explícita na tarefa, "vencimento" é null.
-- Preencha só o campo do tipo escolhido; os outros dois ficam null.
+- Preencha só o campo do tipo escolhido; os outros ficam null.
+- Se o texto não for claramente um gasto/receita, uma tarefa ou uma nota — por exemplo, uma pergunta, um cumprimento, ou algo ambíguo demais pra classificar com segurança — responda "tipo": "indefinido", todos os três campos null, e em "motivo" uma frase curta em português explicando por quê (ex: "isso parece uma pergunta, não um lançamento").
+- Nunca force uma classificação só pra preencher algo. Na dúvida, use "indefinido".
 - A data de hoje é ${new Date().toISOString().slice(0, 10)}.`
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -49,10 +52,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     parsed = JSON.parse(raw.replace(/```json|```/g, '').trim())
   } catch {
-    return res.status(502).json({ error: 'falha ao interpretar resposta da IA' })
+    return res.status(200).json({
+      sucesso: false,
+      mensagem: 'O Scout não conseguiu entender essa resposta. Tenta descrever de outro jeito.',
+    })
   }
 
-  // Grava direto no banco de acordo com o tipo classificado
+  if (parsed.tipo === 'indefinido' || (!parsed.transacao && !parsed.tarefa && !parsed.nota)) {
+    return res.status(200).json({
+      sucesso: false,
+      mensagem: parsed.motivo || 'O Scout não conseguiu entender esse pedido. Tenta ser mais específico.',
+    })
+  }
+
   try {
     if (parsed.tipo === 'transacao' && parsed.transacao) {
       const t = parsed.transacao
@@ -72,10 +84,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         insert into notas (user_id, titulo, corpo, tag)
         values (${userId}, ${n.titulo}, ${n.corpo}, ${n.tag})
       `
+    } else {
+      return res.status(200).json({
+        sucesso: false,
+        mensagem: 'O Scout não conseguiu entender esse pedido. Tenta ser mais específico.',
+      })
     }
   } catch (err) {
-    return res.status(500).json({ error: 'falha ao salvar no banco', details: String(err) })
+    return res.status(200).json({
+      sucesso: false,
+      mensagem: 'O Scout entendeu, mas não conseguiu salvar. Tenta de novo em instantes.',
+    })
   }
 
-  return res.status(200).json({ classificado: parsed })
+  return res.status(200).json({ sucesso: true, classificado: parsed })
 }

@@ -3,17 +3,25 @@ import { Sparkles, Sun, Moon, LogOut, Loader2 } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 
+const LABELS_TIPO: Record<string, string> = {
+  transacao: 'lançamento',
+  tarefa: 'tarefa',
+  nota: 'nota',
+}
+
 export function Topbar() {
   const { theme, toggleTheme } = useTheme()
   const { logout, getToken } = useAuth()
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [feedback, setFeedback] = useState<string | null>(null)
+  const [feedbackErro, setFeedbackErro] = useState(false)
 
   async function enviarCaptura(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key !== 'Enter' || !texto.trim()) return
     setEnviando(true)
     setFeedback(null)
+    setFeedbackErro(false)
     try {
       const token = await getToken()
       const resp = await fetch('/api/capture', {
@@ -21,15 +29,22 @@ export function Topbar() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ texto }),
       })
-      if (!resp.ok) throw new Error()
-      const { classificado } = await resp.json()
-      setFeedback(`classificado como ${classificado.tipo}`)
+      const data = await resp.json()
+
+      if (!resp.ok || data.sucesso === false) {
+        setFeedbackErro(true)
+        setFeedback(data.mensagem || 'O Scout não conseguiu fazer isso.')
+        return
+      }
+
+      setFeedback(`Scout criou ${LABELS_TIPO[data.classificado.tipo] ?? 'um item'}`)
       setTexto('')
     } catch {
-      setFeedback('não consegui classificar, tenta de novo')
+      setFeedbackErro(true)
+      setFeedback('O Scout não conseguiu se conectar. Tenta de novo.')
     } finally {
       setEnviando(false)
-      setTimeout(() => setFeedback(null), 3000)
+      setTimeout(() => { setFeedback(null); setFeedbackErro(false) }, 4000)
     }
   }
 
@@ -47,11 +62,17 @@ export function Topbar() {
           onChange={(e) => setTexto(e.target.value)}
           onKeyDown={enviarCaptura}
           disabled={enviando}
-          placeholder="Digite algo e aperte Enter: 'gastei 42 no mercado' ou 'lembrar dentista quinta'..."
+          placeholder="Peça pro Scout, e aperte Enter: 'gastei 42 no mercado' ou 'lembrar dentista quinta'..."
           className="flex-1 bg-transparent outline-none text-[13.5px] placeholder:text-muted-foreground"
         />
-        <span className="text-[10.5px] font-bold text-secondary bg-[#F5F3FF] rounded px-2 py-1 flex-shrink-0">
-          {feedback ?? 'IA classifica'}
+        <span
+          className="text-[10.5px] font-bold rounded px-2 py-1 flex-shrink-0 max-w-[280px] truncate"
+          style={feedbackErro
+            ? { color: '#991B1B', background: '#FEF2F2' }
+            : { color: 'var(--secondary)', background: '#F5F3FF' }}
+          title={feedback ?? undefined}
+        >
+          {feedback ?? 'Scout classifica'}
         </span>
       </div>
 
