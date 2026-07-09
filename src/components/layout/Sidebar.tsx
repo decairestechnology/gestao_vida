@@ -25,7 +25,8 @@ export function Sidebar() {
           <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
         </div>
         <div className="leading-tight">
-          <div className="font-bold text-sm">Gestão Pessoal</div>
+          <div className="font-bold text-sm">DeCaires</div>
+          <div className="text-[10.5px] text-muted-foreground font-semibold">Gestão Pessoal</div>
         </div>
       </div>
 
