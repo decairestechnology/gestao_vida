@@ -5,7 +5,7 @@ import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
-import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
+import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from '../lib/api'
 
 interface Habito {
   id: string
@@ -106,7 +106,7 @@ export function Habitos() {
   }
 
   async function alternarDia(habitoId: string, data: string) {
-    await apiPost('/api/habito-checks', { habito_id: habitoId, data })
+    await apiPut('/api/habitos', { habito_id: habitoId, data })
     await carregar()
   }
 

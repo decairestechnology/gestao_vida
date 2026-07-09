@@ -136,7 +136,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ sucesso: false, mensagem: `A Scout não encontrou nada parecido com "${parsed.busca}".` })
       }
       if (encontrados.length > 1) {
-        const nomes = encontrados.map((e: { titulo: string }) => `"${e.titulo}"`).join(', ')
+        const nomes = (encontrados as Array<{ titulo: string }>).map((e) => `"${e.titulo}"`).join(', ')
         return res.status(200).json({ sucesso: false, mensagem: `A Scout encontrou mais de um resultado (${nomes}) — tenta ser mais específico.` })
       }
 

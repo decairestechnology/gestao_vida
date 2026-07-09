@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { Login } from './pages/Login'
 import { Dashboard } from './pages/Dashboard'
 import { Financeiro } from './pages/Financeiro'
+import { ContaDetalhe } from './pages/ContaDetalhe'
 import { Investimentos } from './pages/Investimentos'
 import { Tarefas } from './pages/Tarefas'
 import { Habitos } from './pages/Habitos'
@@ -19,6 +20,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="financeiro" element={<Financeiro />} />
+          <Route path="financeiro/conta/:contaId" element={<ContaDetalhe />} />
           <Route path="investimentos" element={<Investimentos />} />
           <Route path="tarefas" element={<Tarefas />} />
           <Route path="habitos" element={<Habitos />} />

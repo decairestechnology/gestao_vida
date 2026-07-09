@@ -67,5 +67,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ deleted: true })
   }
 
+  // PUT = alterna (marca/desmarca) o check de um dia específico.
+  // Vive aqui, não em arquivo próprio, pra não estourar o limite de funções da Vercel.
+  if (req.method === 'PUT') {
+    const { habito_id, data } = req.body ?? {}
+    if (!habito_id || !data) return res.status(400).json({ error: 'habito_id e data são obrigatórios' })
+
+    const [dono] = await sql`select id from habitos where id = ${habito_id} and user_id = ${userId}`
+    if (!dono) return res.status(404).json({ error: 'hábito não encontrado' })
+
+    const [existente] = await sql`select id from habito_checks where habito_id = ${habito_id} and data = ${data}`
+    if (existente) {
+      await sql`delete from habito_checks where id = ${existente.id}`
+      return res.status(200).json({ checked: false })
+    }
+    await sql`insert into habito_checks (habito_id, data) values (${habito_id}, ${data})`
+    return res.status(200).json({ checked: true })
+  }
+
   return res.status(405).json({ error: 'method_not_allowed' })
 }

@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button'
 import { ProgressBar } from '../components/ui/ProgressBar'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
-import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
+import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from '../lib/api'
 
 interface Ativo {
   id: string
@@ -106,7 +106,7 @@ export function Investimentos() {
         const novo = await apiPost<Ativo>('/api/investimentos', { nome: form.nomeNovo, classe: form.classeNovo, valor_atual: 0 })
         ativoId = novo.id
       }
-      await apiPost('/api/aportes', { ativo_id: ativoId, valor: Number(form.valor), data: form.data })
+      await apiPut('/api/investimentos', { ativo_id: ativoId, valor: Number(form.valor), data: form.data })
       setModalAberto(false)
       await carregar()
     } catch (err) {

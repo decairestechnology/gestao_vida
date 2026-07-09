@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Landmark, CreditCard, Wallet, PiggyBank, Search, Pencil, Trash2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Landmark, CreditCard, Wallet, PiggyBank, Search, Pencil, Trash2, ChevronRight } from 'lucide-react'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -47,6 +48,7 @@ const CAMPOS_VAZIOS = {
 const CAMPOS_CONTA_VAZIOS = { nome: '', tipo: 'corrente', saldo: '0', limite: '', fechamento_dia: '' }
 
 export function Financeiro() {
+  const navigate = useNavigate()
   const [contas, setContas] = useState<Conta[]>([])
   const [transacoes, setTransacoes] = useState<Transacao[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -61,10 +63,8 @@ export function Financeiro() {
   const [erro, setErro] = useState<string | null>(null)
 
   const [modalContaAberto, setModalContaAberto] = useState(false)
-  const [editandoConta, setEditandoConta] = useState<Conta | null>(null)
   const [formConta, setFormConta] = useState(CAMPOS_CONTA_VAZIOS)
   const [salvandoConta, setSalvandoConta] = useState(false)
-  const [confirmandoExclusaoConta, setConfirmandoExclusaoConta] = useState<string | null>(null)
 
   async function carregar() {
     setCarregando(true)
@@ -153,18 +153,7 @@ export function Financeiro() {
   }
 
   function abrirCriarConta() {
-    setEditandoConta(null)
     setFormConta(CAMPOS_CONTA_VAZIOS)
-    setModalContaAberto(true)
-  }
-
-  function abrirEditarConta(c: Conta) {
-    setEditandoConta(c)
-    setFormConta({
-      nome: c.nome, tipo: c.tipo, saldo: String(c.saldo),
-      limite: c.limite != null ? String(c.limite) : '',
-      fechamento_dia: c.fechamento_dia != null ? String(c.fechamento_dia) : '',
-    })
     setModalContaAberto(true)
   }
 
@@ -179,22 +168,12 @@ export function Financeiro() {
         limite: formConta.tipo === 'cartao' && formConta.limite ? Number(formConta.limite) : null,
         fechamento_dia: formConta.tipo === 'cartao' && formConta.fechamento_dia ? Number(formConta.fechamento_dia) : null,
       }
-      if (editandoConta) {
-        await apiPatch('/api/contas', { id: editandoConta.id, ...payload })
-      } else {
-        await apiPost('/api/contas', payload)
-      }
+      await apiPost('/api/contas', payload)
       setModalContaAberto(false)
       await carregar()
     } finally {
       setSalvandoConta(false)
     }
-  }
-
-  async function excluirConta(id: string) {
-    await apiDelete('/api/contas', { id })
-    setConfirmandoExclusaoConta(null)
-    await carregar()
   }
 
   const visiveis = transacoes.filter((t) => (t.titulo + t.categoria).toLowerCase().includes(busca.toLowerCase()))
@@ -209,48 +188,39 @@ export function Financeiro() {
         action={<Button variant="gradient" onClick={abrirCriar}>+ Novo lançamento</Button>}
       />
 
-      <div className="flex justify-between items-center mb-2.5">
-        <div className="text-[11.5px] font-bold uppercase tracking-wide text-muted-foreground">Contas</div>
-        <button onClick={abrirCriarConta} className="text-[12px] font-bold text-primary">+ Nova conta</button>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <Card className="mb-4">
+        <div className="flex justify-between items-center mb-1">
+          <CardTitle className="mb-0">Contas</CardTitle>
+          <button onClick={abrirCriarConta} className="text-[12px] font-bold text-primary">+ Nova conta</button>
+        </div>
         {!carregando && contas.length === 0 && (
-          <div className="col-span-3 text-sm text-muted-foreground py-3">Nenhuma conta cadastrada ainda — cria a primeira em "+ Nova conta".</div>
+          <div className="text-sm text-muted-foreground py-3">Nenhuma conta cadastrada ainda — cria a primeira em "+ Nova conta".</div>
         )}
         {contas.map((c) => {
           const info = TIPOS_CONTA.find((t) => t.id === c.tipo) ?? TIPOS_CONTA[0]
           const Icon = info.icon
           const saldoAtual = saldoDaConta(c)
           return (
-            <Card key={c.id} className="flex flex-col gap-2 group">
-              <div className="flex gap-3 items-start">
-                <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: info.bg, color: info.color }}>
-                  <Icon size={18} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="mb-0.5">{c.nome}</CardTitle>
-                  <div className="text-xl font-extrabold" style={{ color: saldoAtual < 0 ? 'var(--destructive)' : undefined }}>
-                    R$ {saldoAtual.toLocaleString('pt-BR')}
-                  </div>
-                  {c.tipo === 'cartao' && c.limite != null && (
-                    <div className="text-[11.5px] text-muted-foreground mt-0.5">
-                      limite R$ {Number(c.limite).toLocaleString('pt-BR')}{c.fechamento_dia ? ` · fecha dia ${c.fechamento_dia}` : ''}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 flex-shrink-0">
-                  <button onClick={() => abrirEditarConta(c)} className="text-muted-foreground hover:text-primary"><Pencil size={13} /></button>
-                  <button onClick={() => setConfirmandoExclusaoConta(c.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={13} /></button>
-                </div>
+            <button
+              key={c.id}
+              onClick={() => navigate(`/financeiro/conta/${c.id}`)}
+              className="w-full flex items-center gap-3 py-2.5 border-b border-border last:border-none hover:bg-muted -mx-1 px-1 rounded-lg transition-colors text-left"
+            >
+              <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: info.bg, color: info.color }}>
+                <Icon size={16} />
               </div>
-              {confirmandoExclusaoConta === c.id && (
-                <DeleteConfirmBar label={`Excluir "${c.nome}"?`} onCancel={() => setConfirmandoExclusaoConta(null)} onConfirm={() => excluirConta(c.id)} />
-              )}
-            </Card>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13.5px] font-semibold">{c.nome}</div>
+                <div className="text-[11px] text-muted-foreground">{info.label}</div>
+              </div>
+              <div className="text-[14px] font-bold flex-shrink-0" style={{ color: saldoAtual < 0 ? 'var(--destructive)' : undefined }}>
+                R$ {saldoAtual.toLocaleString('pt-BR')}
+              </div>
+              <ChevronRight size={16} className="text-muted-foreground flex-shrink-0" />
+            </button>
           )
         })}
-      </div>
+      </Card>
 
       <Card className="mb-4">
         <CardTitle>Recorrências fixas</CardTitle>
@@ -463,7 +433,7 @@ export function Financeiro() {
         </form>
       </Modal>
 
-      <Modal open={modalContaAberto} title={editandoConta ? 'Editar conta' : 'Nova conta'} onClose={() => setModalContaAberto(false)}>
+      <Modal open={modalContaAberto} title="Nova conta" onClose={() => setModalContaAberto(false)}>
         <form onSubmit={salvarConta} className="flex flex-col gap-3">
           <input
             required
@@ -509,7 +479,7 @@ export function Financeiro() {
             </>
           )}
           <Button type="submit" disabled={salvandoConta}>
-            {salvandoConta ? 'Salvando...' : editandoConta ? 'Salvar alterações' : 'Criar conta'}
+            {salvandoConta ? 'Salvando...' : 'Criar conta'}
           </Button>
         </form>
       </Modal>

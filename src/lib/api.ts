@@ -35,6 +35,12 @@ export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
   return res.json()
 }
 
+export async function apiPut<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, { method: 'PUT', headers: await authHeaders(), body: JSON.stringify(body) })
+  await parseErrorOrThrow(res, `PUT ${path}`)
+  return res.json()
+}
+
 export async function apiDelete(path: string, body: unknown): Promise<void> {
   const res = await fetch(path, { method: 'DELETE', headers: await authHeaders(), body: JSON.stringify(body) })
   await parseErrorOrThrow(res, `DELETE ${path}`)
