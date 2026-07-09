@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useAuth } from './AuthContext'
+import { apiGet, apiPost } from '../lib/api'
 
 type Theme = 'light' | 'dark'
 
@@ -10,6 +12,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem('vida-theme') as Theme | null
     if (stored) return stored
@@ -21,7 +24,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('vida-theme', theme)
   }, [theme])
 
-  const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'))
+  // Assim que logar, busca a preferência salva no banco — assim o tema
+  // acompanha o usuário entre dispositivos, não só o navegador local.
+  useEffect(() => {
+    if (!user) return
+    apiGet<{ tema: Theme | null }>('/api/config')
+      .then((res) => {
+        if (res.tema && res.tema !== theme) setTheme(res.tema)
+      })
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  function toggleTheme() {
+    setTheme((t) => {
+      const novo = t === 'light' ? 'dark' : 'light'
+      if (user) apiPost('/api/config', { recurso: 'tema', tema: novo }).catch(() => {})
+      return novo
+    })
+  }
 
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>
 }

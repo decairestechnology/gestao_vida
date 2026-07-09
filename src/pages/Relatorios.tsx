@@ -93,7 +93,7 @@ export function Relatorios() {
     setGerandoAnalise(true)
     setErroAnalise(null)
     try {
-      const resp = await apiPost<{ sucesso: boolean; analise?: string; mensagem?: string }>('/api/relatorio-analise', { resumo: montarResumo() })
+      const resp = await apiPost<{ sucesso: boolean; analise?: string; mensagem?: string }>('/api/dashboard', { resumo: montarResumo() })
       if (!resp.sucesso || !resp.analise) {
         setErroAnalise(resp.mensagem || 'A Scout não conseguiu gerar a análise.')
         return

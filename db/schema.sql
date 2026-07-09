@@ -131,3 +131,19 @@ create index if not exists idx_habitos_user on habitos(user_id);
 create index if not exists idx_notas_user on notas(user_id);
 create index if not exists idx_metas_user on metas(user_id);
 create index if not exists idx_ativos_user on investimentos_ativos(user_id);
+
+-- Módulo de configurações: categorias personalizadas e preferências do usuário
+create table if not exists categorias_personalizadas (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  nome text not null,
+  tipo text not null check (tipo in ('despesa', 'receita')),
+  created_at timestamptz not null default now(),
+  unique (user_id, nome, tipo)
+);
+
+create table if not exists preferencias (
+  user_id text primary key,
+  tema text not null default 'light' check (tema in ('light', 'dark')),
+  updated_at timestamptz not null default now()
+);

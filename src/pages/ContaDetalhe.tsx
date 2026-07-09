@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
-import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from '../data/categorias'
+import { useCategorias } from '../context/CategoriasContext'
 import { hojeBrasilia } from '../lib/date'
 
 const TIPOS_CONTA = [
@@ -46,6 +46,7 @@ const CAMPOS_VAZIOS = {
 export function ContaDetalhe() {
   const { contaId } = useParams()
   const navigate = useNavigate()
+  const { categoriasDespesa, categoriasReceita } = useCategorias()
 
   const [conta, setConta] = useState<Conta | null>(null)
   const [transacoes, setTransacoes] = useState<Transacao[]>([])
@@ -305,7 +306,7 @@ export function ContaDetalhe() {
           <select required value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary">
             <option value="" disabled>Categoria...</option>
-            {(form.tipo === 'despesa' ? CATEGORIAS_DESPESA : CATEGORIAS_RECEITA).map((c) => <option key={c} value={c}>{c}</option>)}
+            {(form.tipo === 'despesa' ? categoriasDespesa : categoriasReceita).map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <textarea placeholder="Descrição (opcional)" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={2}
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary resize-none" />

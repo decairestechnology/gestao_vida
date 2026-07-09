@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   Gauge, Wallet, TrendingUp, CheckSquare, Grid2x2,
-  FileText, Target, BarChart3,
+  FileText, Target, BarChart3, Settings,
 } from 'lucide-react'
 import { clsx } from '../../lib/clsx'
 
@@ -48,8 +48,23 @@ export function Sidebar() {
         </NavLink>
       ))}
 
-      <div className="mt-auto pt-3 border-t border-border text-[11px] text-muted-foreground font-semibold px-2.5">
-        Ecossistema DeCaires
+      <NavLink
+        to="/configuracoes"
+        className={({ isActive }) =>
+          clsx(
+            'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13.5px] font-semibold transition-colors mt-auto',
+            isActive
+              ? 'bg-accent text-primary'
+              : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+          )
+        }
+      >
+        <Settings size={16} />
+        Configurações
+      </NavLink>
+
+      <div className="pt-3 border-t border-border text-[11px] text-muted-foreground font-semibold px-2.5">
+        v0.2 — protótipo<br />ecossistema DeCaires
       </div>
     </aside>
   )

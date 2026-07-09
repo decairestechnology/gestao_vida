@@ -11,6 +11,7 @@ import { Habitos } from './pages/Habitos'
 import { Notas } from './pages/Notas'
 import { Metas } from './pages/Metas'
 import { Relatorios } from './pages/Relatorios'
+import { Configuracoes } from './pages/Configuracoes'
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="notas" element={<Notas />} />
           <Route path="metas" element={<Metas />} />
           <Route path="relatorios" element={<Relatorios />} />
+          <Route path="configuracoes" element={<Configuracoes />} />
         </Route>
       </Route>
     </Routes>

@@ -9,7 +9,7 @@ import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
 
-import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from '../data/categorias'
+import { useCategorias } from '../context/CategoriasContext'
 import { hojeBrasilia, formatarDataBR } from '../lib/date'
 
 const TIPOS_CONTA = [
@@ -58,6 +58,7 @@ const CAMPOS_ORCAMENTO_VAZIOS = { categoria: '', limite: '' }
 
 export function Financeiro() {
   const navigate = useNavigate()
+  const { categoriasDespesa, categoriasReceita } = useCategorias()
   const [contas, setContas] = useState<Conta[]>([])
   const [transacoes, setTransacoes] = useState<Transacao[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -451,7 +452,7 @@ export function Financeiro() {
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary disabled:opacity-60"
           >
             <option value="" disabled>Categoria...</option>
-            {CATEGORIAS_DESPESA.map((c) => <option key={c} value={c}>{c}</option>)}
+            {categoriasDespesa.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
           <input
             required
@@ -508,7 +509,7 @@ export function Financeiro() {
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
           >
             <option value="" disabled>Categoria...</option>
-            {(form.tipo === 'despesa' ? CATEGORIAS_DESPESA : CATEGORIAS_RECEITA).map((c) => (
+            {(form.tipo === 'despesa' ? categoriasDespesa : categoriasReceita).map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
