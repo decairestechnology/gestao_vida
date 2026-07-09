@@ -67,7 +67,7 @@ export function Topbar() {
           onChange={(e) => setTexto(e.target.value)}
           onKeyDown={enviarCaptura}
           disabled={enviando}
-          placeholder="Peça pra Scout, e aperte Enter: 'gastei 42 no mercado' ou 'lembrar dentista quinta'..."
+          placeholder="Peça para a Scout: 'gastei 42 no mercado' ou 'lembrar dentista quinta'... (Enter pra enviar)"
           className="flex-1 bg-transparent outline-none text-[13.5px] placeholder:text-muted-foreground"
         />
         <span
