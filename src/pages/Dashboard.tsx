@@ -49,8 +49,8 @@ export function Dashboard() {
   const metas = data?.metas ?? []
 
   const mesAtual = hoje.slice(0, 7)
-  const saldoMes = transacoes.filter((t) => t.data.slice(0, 7) === mesAtual).reduce((s, t) => s + Number(t.valor), 0)
-  const saldoTotal = transacoes.reduce((s, t) => s + Number(t.valor), 0)
+  const saldoMes = transacoes.filter((t) => t.data.slice(0, 7) === mesAtual && t.data.slice(0, 10) <= hoje).reduce((s, t) => s + Number(t.valor), 0)
+  const saldoTotal = transacoes.filter((t) => t.data.slice(0, 10) <= hoje).reduce((s, t) => s + Number(t.valor), 0)
   const patrimonioInvestido = ativos.reduce((s, a) => s + Number(a.valor_atual), 0)
   const patrimonioTotal = saldoTotal + patrimonioInvestido
 

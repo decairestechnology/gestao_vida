@@ -32,12 +32,15 @@ interface Transacao {
   valor: string | number
   data: string
   conta_id?: string | null
+  recorrente?: boolean
+  recorrencia_intervalo_dias?: number
 }
 
 const CAMPOS_VAZIOS = {
   titulo: '', categoria: '', descricao: '',
   tipo: 'despesa' as 'despesa' | 'receita',
   valor: '', data: hojeBrasilia(),
+  recorrente: false, intervalo: '30',
 }
 
 export function ContaDetalhe() {
@@ -90,7 +93,10 @@ export function ContaDetalhe() {
     )
   }
 
-  const saldoAtual = conta ? Number(conta.saldo) + transacoes.reduce((s, t) => s + Number(t.valor), 0) : 0
+  const hoje = hojeBrasilia()
+  const saldoAtual = conta
+    ? Number(conta.saldo) + transacoes.filter((t) => t.data.slice(0, 10) <= hoje).reduce((s, t) => s + Number(t.valor), 0)
+    : 0
   const info = TIPOS_CONTA.find((t) => t.id === conta?.tipo) ?? TIPOS_CONTA[0]
   const Icon = info.icon
 
@@ -107,6 +113,7 @@ export function ContaDetalhe() {
       titulo: t.titulo, categoria: t.categoria, descricao: t.descricao ?? '',
       tipo: Number(t.valor) < 0 ? 'despesa' : 'receita',
       valor: String(Math.abs(Number(t.valor))), data: t.data.slice(0, 10),
+      recorrente: t.recorrente ?? false, intervalo: String(t.recorrencia_intervalo_dias ?? 30),
     })
     setErro(null)
     setModalAberto(true)
@@ -121,6 +128,7 @@ export function ContaDetalhe() {
       const payload = {
         titulo: form.titulo, categoria: form.categoria, descricao: form.descricao || null,
         valor: valorAssinado, data: form.data, conta_id: contaId,
+        recorrente: form.recorrente, recorrencia_intervalo_dias: form.recorrente ? Number(form.intervalo) : null,
       }
       if (editando) {
         await apiPatch('/api/transacoes', { id: editando.id, ...payload })
@@ -250,15 +258,22 @@ export function ContaDetalhe() {
             {transacoes.length === 0 && (
               <div className="text-sm text-muted-foreground py-4">Nenhum lançamento associado a essa conta ainda.</div>
             )}
-            {transacoes.map((t) => (
+            {transacoes.map((t) => {
+              const agendado = t.data.slice(0, 10) > hoje
+              return (
               <div key={t.id}>
                 <div className="flex items-center gap-3 py-2.5 border-b border-border last:border-none group">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }} />
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: agendado ? 'var(--muted-foreground)' : Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }} />
                   <div className="flex-1">
-                    <div className="text-[13.5px] font-semibold">{t.titulo}</div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-[13.5px] font-semibold">{t.titulo}</div>
+                      {agendado && (
+                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground uppercase tracking-wide">agendado</span>
+                      )}
+                    </div>
                     <div className="text-[11.5px] text-muted-foreground">{t.categoria}{t.descricao ? ` · ${t.descricao}` : ''}</div>
                   </div>
-                  <div className="text-[13px] font-bold" style={{ color: Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }}>
+                  <div className="text-[13px] font-bold" style={{ color: agendado ? 'var(--muted-foreground)' : Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }}>
                     {Number(t.valor) < 0 ? '− ' : '+ '}R$ {Math.abs(Number(t.valor))}
                   </div>
                   <button onClick={() => abrirEditar(t)} className="text-muted-foreground hover:text-primary flex-shrink-0"><Pencil size={14} /></button>
@@ -268,7 +283,7 @@ export function ContaDetalhe() {
                   <DeleteConfirmBar label={`Excluir "${t.titulo}"?`} onCancel={() => setConfirmandoExclusao(null)} onConfirm={() => excluir(t.id)} />
                 )}
               </div>
-            ))}
+            )})}
           </Card>
         </>
       )}
@@ -298,6 +313,23 @@ export function ContaDetalhe() {
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary" />
           <input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })}
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary" />
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={form.recorrente} onChange={(e) => setForm({ ...form, recorrente: e.target.checked })} />
+            Recorrente
+          </label>
+          {form.recorrente && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">repete a cada</span>
+              <input
+                type="number"
+                min="1"
+                value={form.intervalo}
+                onChange={(e) => setForm({ ...form, intervalo: e.target.value })}
+                className="w-16 bg-muted border border-border rounded-lg px-2 py-1.5 text-sm outline-none focus:border-primary"
+              />
+              <span className="text-xs text-muted-foreground">dias</span>
+            </div>
+          )}
           {erro && <div className="text-xs text-destructive font-semibold break-words">{erro}</div>}
           <Button type="submit" disabled={salvando}>{salvando ? 'Salvando...' : editando ? 'Salvar alterações' : 'Criar lançamento'}</Button>
         </form>

@@ -1,7 +1,9 @@
 export const CATEGORIAS_DESPESA = [
   'Alimentação',
   'Transporte',
+  'Veículo',
   'Moradia',
+  'Seguro',
   'Lazer',
   'Saúde',
   'Educação',
@@ -12,6 +14,7 @@ export const CATEGORIAS_DESPESA = [
 
 export const CATEGORIAS_RECEITA = [
   'Salário',
+  'Aluguel',
   'Freelance',
   'Investimentos',
   'Reembolso',

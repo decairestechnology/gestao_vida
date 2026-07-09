@@ -8,7 +8,7 @@ import { ProgressBar } from '../components/ui/ProgressBar'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
-import { orcamentoCategorias } from '../data/mockData'
+
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from '../data/categorias'
 import { hojeBrasilia, formatarDataBR } from '../lib/date'
 
@@ -48,6 +48,14 @@ const CAMPOS_VAZIOS = {
 }
 const CAMPOS_CONTA_VAZIOS = { nome: '', tipo: 'corrente', saldo: '0', limite: '', fechamento_dia: '' }
 
+interface Orcamento {
+  id: string
+  categoria: string
+  limite: string | number
+  mes_referencia: string
+}
+const CAMPOS_ORCAMENTO_VAZIOS = { categoria: '', limite: '' }
+
 export function Financeiro() {
   const navigate = useNavigate()
   const [contas, setContas] = useState<Conta[]>([])
@@ -67,18 +75,28 @@ export function Financeiro() {
   const [formConta, setFormConta] = useState(CAMPOS_CONTA_VAZIOS)
   const [salvandoConta, setSalvandoConta] = useState(false)
 
+  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([])
+  const [modalOrcamentoAberto, setModalOrcamentoAberto] = useState(false)
+  const [editandoOrcamento, setEditandoOrcamento] = useState<Orcamento | null>(null)
+  const [formOrcamento, setFormOrcamento] = useState(CAMPOS_ORCAMENTO_VAZIOS)
+  const [salvandoOrcamento, setSalvandoOrcamento] = useState(false)
+  const [confirmandoExclusaoOrcamento, setConfirmandoExclusaoOrcamento] = useState<string | null>(null)
+
   async function carregar() {
     setCarregando(true)
     try {
-      const [c, t] = await Promise.all([
+      const [c, t, o] = await Promise.all([
         apiGet<Conta[]>('/api/contas'),
         apiGet<Transacao[]>('/api/transacoes'),
+        apiGet<Orcamento[]>('/api/orcamentos'),
       ])
       setContas(c)
       setTransacoes(t)
+      setOrcamentos(o)
     } catch {
       setContas([])
       setTransacoes([])
+      setOrcamentos([])
     } finally {
       setCarregando(false)
     }
@@ -89,7 +107,10 @@ export function Financeiro() {
   }, [])
 
   function saldoDaConta(conta: Conta) {
-    const soma = transacoes.filter((t) => t.conta_id === conta.id).reduce((s, t) => s + Number(t.valor), 0)
+    const hoje = hojeBrasilia()
+    const soma = transacoes
+      .filter((t) => t.conta_id === conta.id && t.data.slice(0, 10) <= hoje)
+      .reduce((s, t) => s + Number(t.valor), 0)
     return Number(conta.saldo) + soma
   }
 
@@ -177,8 +198,43 @@ export function Financeiro() {
     }
   }
 
+  function abrirCriarOrcamento() {
+    setEditandoOrcamento(null)
+    setFormOrcamento(CAMPOS_ORCAMENTO_VAZIOS)
+    setModalOrcamentoAberto(true)
+  }
+
+  function abrirEditarOrcamento(o: Orcamento) {
+    setEditandoOrcamento(o)
+    setFormOrcamento({ categoria: o.categoria, limite: String(o.limite) })
+    setModalOrcamentoAberto(true)
+  }
+
+  async function salvarOrcamento(e: FormEvent) {
+    e.preventDefault()
+    setSalvandoOrcamento(true)
+    try {
+      if (editandoOrcamento) {
+        await apiPatch('/api/orcamentos', { id: editandoOrcamento.id, limite: Number(formOrcamento.limite) })
+      } else {
+        await apiPost('/api/orcamentos', { categoria: formOrcamento.categoria, limite: Number(formOrcamento.limite) })
+      }
+      setModalOrcamentoAberto(false)
+      await carregar()
+    } finally {
+      setSalvandoOrcamento(false)
+    }
+  }
+
+  async function excluirOrcamento(id: string) {
+    await apiDelete('/api/orcamentos', { id })
+    setConfirmandoExclusaoOrcamento(null)
+    await carregar()
+  }
+
   const visiveis = transacoes.filter((t) => (t.titulo + t.categoria).toLowerCase().includes(busca.toLowerCase()))
   const recorrenciasAtivas = transacoes.filter((t) => t.recorrente)
+  const transacoesRealizadas = transacoes.filter((t) => t.data.slice(0, 10) <= hojeBrasilia())
 
   return (
     <div>
@@ -265,19 +321,19 @@ export function Financeiro() {
         <Card>
           <CardTitle>Receitas do mês</CardTitle>
           <div className="text-2xl font-extrabold text-[#10B981]">
-            R$ {transacoes.filter((t) => Number(t.valor) > 0).reduce((s, t) => s + Number(t.valor), 0).toLocaleString('pt-BR')}
+            R$ {transacoesRealizadas.filter((t) => Number(t.valor) > 0).reduce((s, t) => s + Number(t.valor), 0).toLocaleString('pt-BR')}
           </div>
         </Card>
         <Card>
           <CardTitle>Despesas do mês</CardTitle>
           <div className="text-2xl font-extrabold text-destructive">
-            R$ {Math.abs(transacoes.filter((t) => Number(t.valor) < 0).reduce((s, t) => s + Number(t.valor), 0)).toLocaleString('pt-BR')}
+            R$ {Math.abs(transacoesRealizadas.filter((t) => Number(t.valor) < 0).reduce((s, t) => s + Number(t.valor), 0)).toLocaleString('pt-BR')}
           </div>
         </Card>
         <Card>
           <CardTitle>Saldo do período</CardTitle>
           <div className="text-2xl font-extrabold">
-            R$ {transacoes.reduce((s, t) => s + Number(t.valor), 0).toLocaleString('pt-BR')}
+            R$ {transacoesRealizadas.reduce((s, t) => s + Number(t.valor), 0).toLocaleString('pt-BR')}
           </div>
         </Card>
       </div>
@@ -314,17 +370,23 @@ export function Financeiro() {
           )}
           {visiveis.map((t) => {
             const conta = contas.find((c) => c.id === t.conta_id)
+            const agendado = t.data.slice(0, 10) > hojeBrasilia()
             return (
               <div key={t.id}>
                 <div className="flex items-center gap-3 py-2.5 border-b border-border last:border-none group">
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }} />
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: agendado ? 'var(--muted-foreground)' : Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }} />
                   <div className="flex-1">
-                    <div className="text-[13.5px] font-semibold">{t.titulo}</div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-[13.5px] font-semibold">{t.titulo}</div>
+                      {agendado && (
+                        <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground uppercase tracking-wide">agendado</span>
+                      )}
+                    </div>
                     <div className="text-[11.5px] text-muted-foreground">
-                      {t.categoria}{conta ? ` · ${conta.nome}` : ''}{t.descricao ? ` · ${t.descricao}` : ''}
+                      {t.categoria}{conta ? ` · ${conta.nome}` : ''}{t.descricao ? ` · ${t.descricao}` : ''}{agendado ? ` · ${formatarDataBR(t.data)}` : ''}
                     </div>
                   </div>
-                  <div className="text-[13px] font-bold" style={{ color: Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }}>
+                  <div className="text-[13px] font-bold" style={{ color: agendado ? 'var(--muted-foreground)' : Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }}>
                     {Number(t.valor) < 0 ? '− ' : '+ '}R$ {Math.abs(Number(t.valor))}
                   </div>
                   <button onClick={() => abrirEditar(t)} className="text-muted-foreground hover:text-primary flex-shrink-0"><Pencil size={14} /></button>
@@ -339,21 +401,74 @@ export function Financeiro() {
         </Card>
 
         <Card>
-          <CardTitle>Orçamento por categoria</CardTitle>
-          {orcamentoCategorias.length === 0 && (
-            <div className="text-sm text-muted-foreground py-4">Nenhum orçamento definido ainda.</div>
+          <div className="flex justify-between items-center mb-1">
+            <CardTitle className="mb-0">Orçamento por categoria</CardTitle>
+            <button onClick={abrirCriarOrcamento} className="text-[12px] font-bold text-primary">+ Definir</button>
+          </div>
+          {orcamentos.length === 0 && (
+            <div className="text-sm text-muted-foreground py-4">Nenhum orçamento definido esse mês ainda.</div>
           )}
-          {orcamentoCategorias.map((c) => (
-            <div key={c.categoria} className="mb-3.5 last:mb-0">
-              <div className="flex justify-between text-[12.5px] font-semibold">
-                <span>{c.categoria}</span>
-                <span className="text-muted-foreground">R$ {c.gasto} / {c.limite}</span>
+          {orcamentos.map((o) => {
+            const mesAtual = hojeBrasilia().slice(0, 7)
+            const gasto = Math.abs(
+              transacoesRealizadas
+                .filter((t) => t.categoria === o.categoria && Number(t.valor) < 0 && t.data.slice(0, 7) === mesAtual)
+                .reduce((s, t) => s + Number(t.valor), 0)
+            )
+            const limite = Number(o.limite)
+            const estourado = gasto > limite
+            return (
+              <div key={o.id} className="mb-3.5 last:mb-0 group">
+                <div className="flex justify-between text-[12.5px] font-semibold">
+                  <span>{o.categoria}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={estourado ? 'text-destructive' : 'text-muted-foreground'}>
+                      R$ {gasto.toLocaleString('pt-BR')} / {limite.toLocaleString('pt-BR')}
+                    </span>
+                    <button onClick={() => abrirEditarOrcamento(o)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary"><Pencil size={12} /></button>
+                    <button onClick={() => setConfirmandoExclusaoOrcamento(o.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"><Trash2 size={12} /></button>
+                  </div>
+                </div>
+                <ProgressBar percent={(gasto / limite) * 100} color={estourado ? 'var(--destructive)' : 'var(--primary)'} />
+                {confirmandoExclusaoOrcamento === o.id && (
+                  <div className="mt-1.5">
+                    <DeleteConfirmBar label={`Remover orçamento de "${o.categoria}"?`} onCancel={() => setConfirmandoExclusaoOrcamento(null)} onConfirm={() => excluirOrcamento(o.id)} />
+                  </div>
+                )}
               </div>
-              <ProgressBar percent={(c.gasto / c.limite) * 100} color={c.cor} />
-            </div>
-          ))}
+            )
+          })}
         </Card>
       </div>
+
+      <Modal open={modalOrcamentoAberto} title={editandoOrcamento ? 'Editar orçamento' : 'Definir orçamento'} onClose={() => setModalOrcamentoAberto(false)}>
+        <form onSubmit={salvarOrcamento} className="flex flex-col gap-3">
+          <select
+            required
+            disabled={!!editandoOrcamento}
+            value={formOrcamento.categoria}
+            onChange={(e) => setFormOrcamento({ ...formOrcamento, categoria: e.target.value })}
+            className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary disabled:opacity-60"
+          >
+            <option value="" disabled>Categoria...</option>
+            {CATEGORIAS_DESPESA.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <input
+            required
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="Limite mensal"
+            value={formOrcamento.limite}
+            onChange={(e) => setFormOrcamento({ ...formOrcamento, limite: e.target.value })}
+            className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
+          />
+          <p className="text-xs text-muted-foreground">Vale pro mês atual ({hojeBrasilia().slice(0, 7)}). Definir de novo no próximo mês.</p>
+          <Button type="submit" disabled={salvandoOrcamento}>
+            {salvandoOrcamento ? 'Salvando...' : editandoOrcamento ? 'Salvar alterações' : 'Definir orçamento'}
+          </Button>
+        </form>
+      </Modal>
 
       <Modal open={modalAberto} title={editando ? 'Editar lançamento' : 'Novo lançamento'} onClose={() => setModalAberto(false)}>
         <form onSubmit={salvar} className="flex flex-col gap-3">
