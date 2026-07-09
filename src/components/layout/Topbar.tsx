@@ -33,7 +33,7 @@ export function Topbar() {
 
       if (!resp.ok || data.sucesso === false) {
         setFeedbackErro(true)
-        setFeedback(data.mensagem || 'O Scout não conseguiu fazer isso.')
+        setFeedback(data.mensagem || 'A Scout não conseguiu fazer isso.')
         return
       }
 
@@ -41,7 +41,7 @@ export function Topbar() {
       setTexto('')
     } catch {
       setFeedbackErro(true)
-      setFeedback('O Scout não conseguiu se conectar. Tenta de novo.')
+      setFeedback('A Scout não conseguiu se conectar. Tenta de novo.')
     } finally {
       setEnviando(false)
       setTimeout(() => { setFeedback(null); setFeedbackErro(false) }, 4000)
@@ -62,7 +62,7 @@ export function Topbar() {
           onChange={(e) => setTexto(e.target.value)}
           onKeyDown={enviarCaptura}
           disabled={enviando}
-          placeholder="Peça pro Scout, e aperte Enter: 'gastei 42 no mercado' ou 'lembrar dentista quinta'..."
+          placeholder="Peça pra Scout, e aperte Enter: 'gastei 42 no mercado' ou 'lembrar dentista quinta'..."
           className="flex-1 bg-transparent outline-none text-[13.5px] placeholder:text-muted-foreground"
         />
         <span

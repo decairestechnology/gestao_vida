@@ -6,7 +6,7 @@ import { sql } from './_db.js'
 // ANTHROPIC_API_KEY vem do console.anthropic.com → API Keys
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
-const SYSTEM_PROMPT = `Você é o Scout, o assistente de captura rápida de um sistema pessoal de controle.
+const SYSTEM_PROMPT = `Você é a Scout, a assistente virtual de captura rápida de um sistema pessoal de controle.
 Dado um texto curto em português, responda APENAS com um JSON (sem markdown, sem texto extra) no formato:
 
 {
@@ -54,14 +54,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch {
     return res.status(200).json({
       sucesso: false,
-      mensagem: 'O Scout não conseguiu entender essa resposta. Tenta descrever de outro jeito.',
+      mensagem: 'A Scout não conseguiu entender essa resposta. Tenta descrever de outro jeito.',
     })
   }
 
   if (parsed.tipo === 'indefinido' || (!parsed.transacao && !parsed.tarefa && !parsed.nota)) {
     return res.status(200).json({
       sucesso: false,
-      mensagem: parsed.motivo || 'O Scout não conseguiu entender esse pedido. Tenta ser mais específico.',
+      mensagem: parsed.motivo || 'A Scout não conseguiu entender esse pedido. Tenta ser mais específico.',
     })
   }
 
@@ -87,13 +87,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } else {
       return res.status(200).json({
         sucesso: false,
-        mensagem: 'O Scout não conseguiu entender esse pedido. Tenta ser mais específico.',
+        mensagem: 'A Scout não conseguiu entender esse pedido. Tenta ser mais específico.',
       })
     }
   } catch (err) {
     return res.status(200).json({
       sucesso: false,
-      mensagem: 'O Scout entendeu, mas não conseguiu salvar. Tenta de novo em instantes.',
+      mensagem: 'A Scout entendeu, mas não conseguiu salvar. Tenta de novo em instantes.',
     })
   }
 
