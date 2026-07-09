@@ -49,7 +49,7 @@ export function Sidebar() {
       ))}
 
       <div className="mt-auto pt-3 border-t border-border text-[11px] text-muted-foreground font-semibold px-2.5">
-        v0.2 — protótipo<br />ecossistema DeCaires
+        Ecossistema DeCaires
       </div>
     </aside>
   )
