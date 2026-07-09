@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --primary: #06B6D4;
+  --primary-foreground: #FFFFFF;
+  --secondary: #7C3AED;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #E0F9FF;
+  --border: #E2E8F0;
+  --destructive: #EF4444;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #0F172A;
+  --foreground: #F8FAFC;
+  --card: #1E293B;
+  --primary: #22D3EE;
+  --primary-foreground: #0F172A;
+  --secondary: #A78BFA;
+  --muted: #24314A;
+  --muted-foreground: #94A3B8;
+  --accent: #123240;
+  --border: #334155;
+  --destructive: #F87171;
+}
+
+html { font-size: 16px; }
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  transition: background .2s, color .2s;
+}
+
+/* Cores semânticas de status (badges) — seção 2 do guia de marca */
+.badge-success { background: #ECFDF5; color: #065F46; }
+.badge-warning { background: #FFFBEB; color: #92400E; }
+.badge-error   { background: #FEF2F2; color: #991B1B; }
+.badge-info    { background: #ECFEFF; color: #0E7490; }
+.badge-alt     { background: #F5F3FF; color: #5B21B6; }
+.badge-neutral { background: #F1F5F9; color: #475569; }
