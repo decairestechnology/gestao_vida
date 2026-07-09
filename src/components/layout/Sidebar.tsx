@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { to: '/notas', label: 'Notas', icon: FileText },
   { to: '/metas', label: 'Metas', icon: Target },
   { to: '/relatorios', label: 'Relatórios', icon: BarChart3 },
+  { to: '/configuracoes', label: 'Configurações', icon: Settings },
 ]
 
 export function Sidebar() {
@@ -24,8 +25,7 @@ export function Sidebar() {
           <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
         </div>
         <div className="leading-tight">
-          <div className="font-bold text-sm">Vida</div>
-          <div className="text-[10.5px] text-muted-foreground font-semibold">DeCaires Ecosystem</div>
+          <div className="font-bold text-sm">Gestão Pessoal</div>
         </div>
       </div>
 
@@ -48,23 +48,8 @@ export function Sidebar() {
         </NavLink>
       ))}
 
-      <NavLink
-        to="/configuracoes"
-        className={({ isActive }) =>
-          clsx(
-            'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13.5px] font-semibold transition-colors mt-auto',
-            isActive
-              ? 'bg-accent text-primary'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-          )
-        }
-      >
-        <Settings size={16} />
-        Configurações
-      </NavLink>
-
-      <div className="pt-3 border-t border-border text-[11px] text-muted-foreground font-semibold px-2.5">
-        v0.2 — protótipo<br />ecossistema DeCaires
+      <div className="mt-auto pt-3 border-t border-border text-[11px] text-muted-foreground font-semibold px-2.5">
+        Ecossistema DeCaires
       </div>
     </aside>
   )
