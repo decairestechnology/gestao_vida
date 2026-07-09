@@ -8,6 +8,7 @@ import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
 import { contas, recorrencias, orcamentoCategorias } from '../data/mockData'
+import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from '../data/categorias'
 
 const CONTA_ICONS = { corrente: Landmark, cartao: CreditCard, dinheiro: Wallet }
 const CONTA_STYLE = {
@@ -20,11 +21,19 @@ interface Transacao {
   id: string
   titulo: string
   categoria: string
+  descricao?: string | null
   valor: string | number
   data: string
 }
 
-const CAMPOS_VAZIOS = { titulo: '', categoria: '', valor: '', data: new Date().toISOString().slice(0, 10) }
+const CAMPOS_VAZIOS = {
+  titulo: '',
+  categoria: '',
+  descricao: '',
+  tipo: 'despesa' as 'despesa' | 'receita',
+  valor: '',
+  data: new Date().toISOString().slice(0, 10),
+}
 
 export function Financeiro() {
   const [transacoes, setTransacoes] = useState<Transacao[]>([])
@@ -37,6 +46,7 @@ export function Financeiro() {
   const [form, setForm] = useState(CAMPOS_VAZIOS)
   const [salvando, setSalvando] = useState(false)
   const [confirmandoExclusao, setConfirmandoExclusao] = useState<string | null>(null)
+  const [erro, setErro] = useState<string | null>(null)
 
   async function carregar() {
     setCarregando(true)
@@ -62,15 +72,30 @@ export function Financeiro() {
 
   function abrirEditar(t: Transacao) {
     setEditando(t)
-    setForm({ titulo: t.titulo, categoria: t.categoria, valor: String(t.valor), data: t.data.slice(0, 10) })
+    setForm({
+      titulo: t.titulo,
+      categoria: t.categoria,
+      descricao: t.descricao ?? '',
+      tipo: Number(t.valor) < 0 ? 'despesa' : 'receita',
+      valor: String(Math.abs(Number(t.valor))),
+      data: t.data.slice(0, 10),
+    })
     setModalAberto(true)
   }
 
   async function salvar(e: FormEvent) {
     e.preventDefault()
     setSalvando(true)
+    setErro(null)
     try {
-      const payload = { ...form, valor: Number(form.valor) }
+      const valorAssinado = form.tipo === 'despesa' ? -Math.abs(Number(form.valor)) : Math.abs(Number(form.valor))
+      const payload = {
+        titulo: form.titulo,
+        categoria: form.categoria,
+        descricao: form.descricao || null,
+        valor: valorAssinado,
+        data: form.data,
+      }
       if (editando) {
         await apiPatch('/api/transacoes', { id: editando.id, ...payload })
       } else {
@@ -78,8 +103,8 @@ export function Financeiro() {
       }
       setModalAberto(false)
       await carregar()
-    } catch {
-      alert('Não foi possível salvar. Tenta de novo.')
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Não foi possível salvar. Tenta de novo.')
     } finally {
       setSalvando(false)
     }
@@ -205,7 +230,9 @@ export function Financeiro() {
                 />
                 <div className="flex-1">
                   <div className="text-[13.5px] font-semibold">{t.titulo}</div>
-                  <div className="text-[11.5px] text-muted-foreground">{t.categoria}</div>
+                  <div className="text-[11.5px] text-muted-foreground">
+                    {t.categoria}{t.descricao ? ` · ${t.descricao}` : ''}
+                  </div>
                 </div>
                 <div className="text-[13px] font-bold" style={{ color: Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }}>
                   {Number(t.valor) < 0 ? '− ' : '+ '}R$ {Math.abs(Number(t.valor))}
@@ -250,6 +277,27 @@ export function Financeiro() {
 
       <Modal open={modalAberto} title={editando ? 'Editar lançamento' : 'Novo lançamento'} onClose={() => setModalAberto(false)}>
         <form onSubmit={salvar} className="flex flex-col gap-3">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, tipo: 'despesa', categoria: '' })}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                form.tipo === 'despesa' ? 'bg-[#FEF2F2] border-destructive text-destructive' : 'border-border text-muted-foreground'
+              }`}
+            >
+              Gasto
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, tipo: 'receita', categoria: '' })}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                form.tipo === 'receita' ? 'bg-[#ECFDF5] border-[#10B981] text-[#10B981]' : 'border-border text-muted-foreground'
+              }`}
+            >
+              Receita
+            </button>
+          </div>
+
           <input
             required
             placeholder="Título (ex: Mercado)"
@@ -257,18 +305,33 @@ export function Financeiro() {
             onChange={(e) => setForm({ ...form, titulo: e.target.value })}
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
           />
-          <input
+
+          <select
             required
-            placeholder="Categoria (ex: alimentação)"
             value={form.categoria}
             onChange={(e) => setForm({ ...form, categoria: e.target.value })}
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
+          >
+            <option value="" disabled>Categoria...</option>
+            {(form.tipo === 'despesa' ? CATEGORIAS_DESPESA : CATEGORIAS_RECEITA).map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+
+          <textarea
+            placeholder="Descrição (opcional)"
+            value={form.descricao}
+            onChange={(e) => setForm({ ...form, descricao: e.target.value })}
+            rows={2}
+            className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary resize-none"
           />
+
           <input
             required
             type="number"
             step="0.01"
-            placeholder="Valor (negativo = gasto, positivo = receita)"
+            min="0"
+            placeholder="Valor"
             value={form.valor}
             onChange={(e) => setForm({ ...form, valor: e.target.value })}
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
@@ -279,6 +342,7 @@ export function Financeiro() {
             onChange={(e) => setForm({ ...form, data: e.target.value })}
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
           />
+          {erro && <div className="text-xs text-destructive font-semibold break-words">{erro}</div>}
           <Button type="submit" disabled={salvando}>
             {salvando ? 'Salvando...' : editando ? 'Salvar alterações' : 'Criar lançamento'}
           </Button>

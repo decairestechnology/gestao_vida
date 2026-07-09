@@ -4,11 +4,10 @@ import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui/Button'
 
 export function Login() {
-  const { loginEmail, cadastrarEmail, loginGoogle } = useAuth()
+  const { loginEmail } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
-  const [modo, setModo] = useState<'entrar' | 'cadastrar'>('entrar')
   const [erro, setErro] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(false)
 
@@ -17,8 +16,7 @@ export function Login() {
     setErro(null)
     setCarregando(true)
     try {
-      if (modo === 'entrar') await loginEmail(email, senha)
-      else await cadastrarEmail(email, senha)
+      await loginEmail(email, senha)
       navigate('/')
     } catch (err) {
       setErro('Não foi possível entrar. Confere e-mail e senha.')
@@ -38,7 +36,7 @@ export function Login() {
           </div>
         </div>
 
-        <h1 className="text-lg font-bold mb-1">{modo === 'entrar' ? 'Entrar' : 'Criar conta'}</h1>
+        <h1 className="text-lg font-bold mb-1">Entrar</h1>
         <p className="text-sm text-muted-foreground mb-5">Acesso pessoal ao seu sistema de controle.</p>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-3">
@@ -60,23 +58,9 @@ export function Login() {
           />
           {erro && <div className="text-xs text-destructive font-semibold">{erro}</div>}
           <Button type="submit" disabled={carregando}>
-            {carregando ? 'Entrando...' : modo === 'entrar' ? 'Entrar' : 'Criar conta'}
+            {carregando ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>
-
-        <button
-          onClick={loginGoogle}
-          className="w-full mt-3 border border-border rounded-lg py-2.5 text-sm font-semibold hover:bg-muted transition-colors"
-        >
-          Entrar com Google
-        </button>
-
-        <button
-          onClick={() => setModo(modo === 'entrar' ? 'cadastrar' : 'entrar')}
-          className="w-full mt-4 text-xs text-muted-foreground font-semibold"
-        >
-          {modo === 'entrar' ? 'Não tem conta? Criar uma' : 'Já tem conta? Entrar'}
-        </button>
       </div>
     </div>
   )

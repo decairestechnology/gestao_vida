@@ -23,25 +23,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    const { titulo, categoria, valor, data, conta_id } = req.body ?? {}
+    const { titulo, categoria, valor, data, conta_id, descricao } = req.body ?? {}
     if (!titulo || !categoria || valor === undefined) {
       return res.status(400).json({ error: 'titulo, categoria e valor são obrigatórios' })
     }
     const [row] = await sql`
-      insert into transacoes (user_id, titulo, categoria, valor, data, conta_id, origem)
-      values (${userId}, ${titulo}, ${categoria}, ${valor}, ${data ?? new Date().toISOString().slice(0, 10)}, ${conta_id ?? null}, 'manual')
+      insert into transacoes (user_id, titulo, categoria, descricao, valor, data, conta_id, origem)
+      values (${userId}, ${titulo}, ${categoria}, ${descricao ?? null}, ${valor}, ${data ?? new Date().toISOString().slice(0, 10)}, ${conta_id ?? null}, 'manual')
       returning *
     `
     return res.status(201).json(row)
   }
 
   if (req.method === 'PATCH') {
-    const { id, titulo, categoria, valor, data } = req.body ?? {}
+    const { id, titulo, categoria, valor, data, descricao } = req.body ?? {}
     if (!id) return res.status(400).json({ error: 'id é obrigatório' })
     const [row] = await sql`
       update transacoes set
         titulo = coalesce(${titulo}, titulo),
         categoria = coalesce(${categoria}, categoria),
+        descricao = coalesce(${descricao}, descricao),
         valor = coalesce(${valor}, valor),
         data = coalesce(${data}, data)
       where id = ${id} and user_id = ${userId}
@@ -63,4 +64,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   return res.status(405).json({ error: 'method_not_allowed' })
 }
-
