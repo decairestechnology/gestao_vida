@@ -26,6 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       where h.user_id = ${userId} and h.ativo = true
       group by h.id
       order by h.created_at asc
+      limit 100
     `
     return res.status(200).json(rows)
   }

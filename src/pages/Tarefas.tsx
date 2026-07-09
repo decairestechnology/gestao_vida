@@ -28,7 +28,7 @@ const TABS = [
 
 const PRIORIDADE_BADGE = { alta: 'error', media: 'warning', baixa: 'neutral' } as const
 
-const CAMPOS_VAZIOS = { titulo: '', tag: '', vencimento: '', prioridade: 'media' as Tarefa['prioridade'], recorrente: false }
+const CAMPOS_VAZIOS = { titulo: '', tag: '', vencimento: '', prioridade: 'media' as Tarefa['prioridade'], recorrente: false, intervalo: '30' }
 
 function calcularAba(t: Tarefa): string {
   if (t.status === 'concluida') return 'concluida'
@@ -91,6 +91,7 @@ export function Tarefas() {
       vencimento: t.vencimento?.slice(0, 10) ?? '',
       prioridade: t.prioridade,
       recorrente: t.recorrente,
+      intervalo: '30',
     })
     setErro(null)
     setModalAberto(true)
@@ -107,6 +108,7 @@ export function Tarefas() {
         vencimento: form.vencimento || null,
         prioridade: form.prioridade,
         recorrente: form.recorrente,
+        recorrencia_intervalo_dias: form.recorrente ? Number(form.intervalo) : null,
       }
       if (editando) {
         await apiPatch('/api/tarefas', { id: editando.id, ...payload })
@@ -284,6 +286,19 @@ export function Tarefas() {
             />
             Recorrente
           </label>
+          {form.recorrente && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">repete a cada</span>
+              <input
+                type="number"
+                min="1"
+                value={form.intervalo}
+                onChange={(e) => setForm({ ...form, intervalo: e.target.value })}
+                className="w-16 bg-muted border border-border rounded-lg px-2 py-1.5 text-sm outline-none focus:border-primary"
+              />
+              <span className="text-xs text-muted-foreground">dias (gera a próxima quando você concluir essa)</span>
+            </div>
+          )}
           {erro && <div className="text-xs text-destructive font-semibold break-words">{erro}</div>}
           <Button type="submit" disabled={salvando}>
             {salvando ? 'Salvando...' : editando ? 'Salvar alterações' : 'Criar tarefa'}

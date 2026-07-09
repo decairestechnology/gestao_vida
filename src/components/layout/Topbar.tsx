@@ -3,10 +3,15 @@ import { Sparkles, Sun, Moon, LogOut, Loader2 } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 
-const LABELS_TIPO: Record<string, string> = {
+const LABELS_ENTIDADE: Record<string, string> = {
   transacao: 'lançamento',
   tarefa: 'tarefa',
   nota: 'nota',
+}
+const LABELS_ACAO: Record<string, string> = {
+  criar: 'criou',
+  editar: 'editou',
+  excluir: 'excluiu',
 }
 
 export function Topbar() {
@@ -37,7 +42,7 @@ export function Topbar() {
         return
       }
 
-      setFeedback(`Scout criou ${LABELS_TIPO[data.classificado.tipo] ?? 'um item'}`)
+      setFeedback(`Scout ${LABELS_ACAO[data.acao] ?? 'processou'} ${LABELS_ENTIDADE[data.entidade] ?? 'um item'}`)
       setTexto('')
     } catch {
       setFeedbackErro(true)

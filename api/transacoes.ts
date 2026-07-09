@@ -17,19 +17,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'GET') {
     const rows = await sql`
-      select * from transacoes where user_id = ${userId} order by data desc limit 100
+      select * from transacoes where user_id = ${userId} order by data desc limit 300
     `
     return res.status(200).json(rows)
   }
 
   if (req.method === 'POST') {
-    const { titulo, categoria, valor, data, conta_id, descricao } = req.body ?? {}
+    const { titulo, categoria, valor, data, conta_id, descricao, recorrente, recorrencia_intervalo_dias } = req.body ?? {}
     if (!titulo || !categoria || valor === undefined) {
       return res.status(400).json({ error: 'titulo, categoria e valor são obrigatórios' })
     }
     const [row] = await sql`
-      insert into transacoes (user_id, titulo, categoria, descricao, valor, data, conta_id, origem)
-      values (${userId}, ${titulo}, ${categoria}, ${descricao ?? null}, ${valor}, ${data ?? new Date().toISOString().slice(0, 10)}, ${conta_id ?? null}, 'manual')
+      insert into transacoes (user_id, titulo, categoria, descricao, valor, data, conta_id, origem, recorrente, recorrencia_intervalo_dias)
+      values (${userId}, ${titulo}, ${categoria}, ${descricao ?? null}, ${valor}, ${data ?? new Date().toISOString().slice(0, 10)}, ${conta_id ?? null}, 'manual', ${recorrente ?? false}, ${recorrencia_intervalo_dias ?? 30})
       returning *
     `
     return res.status(201).json(row)
@@ -64,3 +64,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   return res.status(405).json({ error: 'method_not_allowed' })
 }
+

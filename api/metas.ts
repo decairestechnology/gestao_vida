@@ -17,6 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       left join investimentos_ativos a on a.id = m.ativo_vinculado_id
       where m.user_id = ${userId}
       order by m.concluida asc, m.prazo asc nulls last
+      limit 100
     `
     return res.status(200).json(rows)
   }

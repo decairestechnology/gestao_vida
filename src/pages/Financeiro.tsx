@@ -7,7 +7,7 @@ import { ProgressBar } from '../components/ui/ProgressBar'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
-import { contas, recorrencias, orcamentoCategorias } from '../data/mockData'
+import { contas, orcamentoCategorias } from '../data/mockData'
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from '../data/categorias'
 
 const CONTA_ICONS = { corrente: Landmark, cartao: CreditCard, dinheiro: Wallet }
@@ -24,6 +24,8 @@ interface Transacao {
   descricao?: string | null
   valor: string | number
   data: string
+  recorrente?: boolean
+  recorrencia_intervalo_dias?: number
 }
 
 const CAMPOS_VAZIOS = {
@@ -33,6 +35,8 @@ const CAMPOS_VAZIOS = {
   tipo: 'despesa' as 'despesa' | 'receita',
   valor: '',
   data: new Date().toISOString().slice(0, 10),
+  recorrente: false,
+  intervalo: '30',
 }
 
 export function Financeiro() {
@@ -79,6 +83,8 @@ export function Financeiro() {
       tipo: Number(t.valor) < 0 ? 'despesa' : 'receita',
       valor: String(Math.abs(Number(t.valor))),
       data: t.data.slice(0, 10),
+      recorrente: t.recorrente ?? false,
+      intervalo: String(t.recorrencia_intervalo_dias ?? 30),
     })
     setModalAberto(true)
   }
@@ -95,6 +101,8 @@ export function Financeiro() {
         descricao: form.descricao || null,
         valor: valorAssinado,
         data: form.data,
+        recorrente: form.recorrente,
+        recorrencia_intervalo_dias: form.recorrente ? Number(form.intervalo) : null,
       }
       if (editando) {
         await apiPatch('/api/transacoes', { id: editando.id, ...payload })
@@ -121,6 +129,7 @@ export function Financeiro() {
   }
 
   const visiveis = transacoes.filter((t) => (t.titulo + t.categoria).toLowerCase().includes(busca.toLowerCase()))
+  const recorrenciasAtivas = transacoes.filter((t) => t.recorrente)
 
   return (
     <div>
@@ -155,17 +164,17 @@ export function Financeiro() {
 
       <Card className="mb-4">
         <CardTitle>Recorrências fixas</CardTitle>
-        {recorrencias.length === 0 && (
-          <div className="text-sm text-muted-foreground py-4">Nenhuma recorrência cadastrada ainda.</div>
+        {recorrenciasAtivas.length === 0 && (
+          <div className="text-sm text-muted-foreground py-4">Nenhuma recorrência cadastrada ainda. Marca "Recorrente" ao criar um lançamento.</div>
         )}
-        {recorrencias.map((r) => (
+        {recorrenciasAtivas.map((r) => (
           <div key={r.id} className="flex items-center gap-3 py-2.5 border-b border-border last:border-none">
             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--secondary)' }} />
             <div className="flex-1">
-              <div className="text-[13.5px] font-semibold">{r.nome}</div>
-              <div className="text-[11.5px] text-muted-foreground">{r.quando}</div>
+              <div className="text-[13.5px] font-semibold">{r.titulo}</div>
+              <div className="text-[11.5px] text-muted-foreground">a cada {r.recorrencia_intervalo_dias} dias · próxima em {new Date(r.data).toLocaleDateString('pt-BR')}</div>
             </div>
-            <div className="text-[13px] font-bold">R$ {r.valor.toLocaleString('pt-BR')}</div>
+            <div className="text-[13px] font-bold">R$ {Math.abs(Number(r.valor)).toLocaleString('pt-BR')}</div>
           </div>
         ))}
       </Card>
@@ -342,6 +351,27 @@ export function Financeiro() {
             onChange={(e) => setForm({ ...form, data: e.target.value })}
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
           />
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={form.recorrente}
+              onChange={(e) => setForm({ ...form, recorrente: e.target.checked })}
+            />
+            Recorrente
+          </label>
+          {form.recorrente && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">repete a cada</span>
+              <input
+                type="number"
+                min="1"
+                value={form.intervalo}
+                onChange={(e) => setForm({ ...form, intervalo: e.target.value })}
+                className="w-16 bg-muted border border-border rounded-lg px-2 py-1.5 text-sm outline-none focus:border-primary"
+              />
+              <span className="text-xs text-muted-foreground">dias</span>
+            </div>
+          )}
           {erro && <div className="text-xs text-destructive font-semibold break-words">{erro}</div>}
           <Button type="submit" disabled={salvando}>
             {salvando ? 'Salvando...' : editando ? 'Salvar alterações' : 'Criar lançamento'}

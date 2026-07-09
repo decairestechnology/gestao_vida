@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'GET') {
     const rows = await sql`
-      select * from notas where user_id = ${userId} order by pinned desc, created_at desc
+      select * from notas where user_id = ${userId} order by pinned desc, created_at desc limit 200
     `
     return res.status(200).json(rows)
   }

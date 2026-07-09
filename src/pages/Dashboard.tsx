@@ -6,13 +6,7 @@ import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { ProgressBar } from '../components/ui/ProgressBar'
 import { apiGet, apiPatch } from '../lib/api'
-
-interface Transacao { id: string; titulo: string; categoria: string; valor: string | number; data: string }
-interface Tarefa { id: string; titulo: string; status: string; prioridade: 'alta' | 'media' | 'baixa'; vencimento: string | null; parent_id: string | null }
-interface Habito { id: string; nome: string; checks: string[] }
-interface Ativo { valor_atual: string | number }
-interface Nota { id: string; titulo: string; pinned: boolean }
-interface Meta { id: string; nome: string; valor_atual: string | number; valor_alvo: string | number; concluida: boolean }
+import type { DashboardData } from '../types/dashboard'
 
 const PRIORIDADE_BADGE = { alta: 'error', media: 'warning', baixa: 'neutral' } as const
 const CORES_META = ['var(--primary)', 'var(--secondary)', '#F59E0B']
@@ -31,37 +25,27 @@ function calcularStreak(checks: string[]): number {
 
 export function Dashboard() {
   const navigate = useNavigate()
-  const [transacoes, setTransacoes] = useState<Transacao[]>([])
-  const [tarefas, setTarefas] = useState<Tarefa[]>([])
-  const [habitos, setHabitos] = useState<Habito[]>([])
-  const [ativos, setAtivos] = useState<Ativo[]>([])
-  const [notas, setNotas] = useState<Nota[]>([])
-  const [metas, setMetas] = useState<Meta[]>([])
+  const [data, setData] = useState<DashboardData | null>(null)
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      apiGet<Transacao[]>('/api/transacoes').catch(() => []),
-      apiGet<Tarefa[]>('/api/tarefas').catch(() => []),
-      apiGet<Habito[]>('/api/habitos').catch(() => []),
-      apiGet<{ ativos: Ativo[] }>('/api/investimentos').catch(() => ({ ativos: [] })),
-      apiGet<Nota[]>('/api/notas').catch(() => []),
-      apiGet<Meta[]>('/api/metas').catch(() => []),
-    ]).then(([t, tf, h, inv, n, m]) => {
-      setTransacoes(t)
-      setTarefas(tf)
-      setHabitos(h)
-      setAtivos(inv.ativos)
-      setNotas(n)
-      setMetas(m)
-      setCarregando(false)
-    })
+    apiGet<DashboardData>('/api/dashboard')
+      .then(setData)
+      .catch(() => setData({ transacoes: [], tarefas: [], habitos: [], investimentos: { ativos: [], aportes: [] }, notas: [], metas: [] }))
+      .finally(() => setCarregando(false))
   }, [])
 
-  async function concluirTarefa(t: Tarefa) {
-    await apiPatch('/api/tarefas', { id: t.id, status: 'concluida' })
-    setTarefas((prev) => prev.map((x) => (x.id === t.id ? { ...x, status: 'concluida' } : x)))
+  async function concluirTarefa(id: string) {
+    await apiPatch('/api/tarefas', { id, status: 'concluida' })
+    setData((prev) => prev && { ...prev, tarefas: prev.tarefas.map((t) => (t.id === id ? { ...t, status: 'concluida' } : t)) })
   }
+
+  const transacoes = data?.transacoes ?? []
+  const tarefas = data?.tarefas ?? []
+  const habitos = data?.habitos ?? []
+  const ativos = data?.investimentos.ativos ?? []
+  const notas = data?.notas ?? []
+  const metas = data?.metas ?? []
 
   const mesAtual = hoje.slice(0, 7)
   const saldoMes = transacoes.filter((t) => t.data.slice(0, 7) === mesAtual).reduce((s, t) => s + Number(t.valor), 0)
@@ -137,7 +121,7 @@ export function Dashboard() {
           )}
           {tarefasHojeLista.map((t) => (
             <div key={t.id} className="flex items-center gap-3 py-2.5 border-b border-border last:border-none">
-              <button onClick={() => concluirTarefa(t)}>
+              <button onClick={() => concluirTarefa(t.id)}>
                 <div className="w-[17px] h-[17px] rounded-[5px] border-[1.5px] border-border" />
               </button>
               <div className="flex-1">

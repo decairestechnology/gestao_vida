@@ -12,13 +12,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'GET') {
     const ativos = await sql`
-      select * from investimentos_ativos where user_id = ${userId} order by created_at asc
+      select * from investimentos_ativos where user_id = ${userId} order by created_at asc limit 200
     `
     const aportes = await sql`
       select a.* from investimentos_aportes a
       join investimentos_ativos i on i.id = a.ativo_id
       where i.user_id = ${userId}
       order by a.data asc
+      limit 500
     `
     return res.status(200).json({ ativos, aportes })
   }

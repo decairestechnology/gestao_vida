@@ -19,13 +19,23 @@ create table if not exists transacoes (
   conta_id uuid references contas(id) on delete set null,
   titulo text not null,
   categoria text not null,
+  descricao text,
   valor numeric(12,2) not null, -- negativo = despesa, positivo = receita
   data date not null default current_date,
   recorrente boolean not null default false,
   recorrencia_regra text, -- ex: 'monthly:5' (todo dia 5)
-  origem text not null default 'manual' check (origem in ('manual', 'ia')),
+  recorrencia_intervalo_dias int not null default 30,
+  proxima_gerada boolean not null default false,
+  origem text not null default 'manual' check (origem in ('manual', 'ia', 'recorrencia')),
   created_at timestamptz not null default now()
 );
+
+-- Se a tabela já existia antes dessas colunas, roda essas linhas também (seguras, "if not exists"):
+alter table transacoes add column if not exists descricao text;
+alter table transacoes add column if not exists recorrencia_intervalo_dias int not null default 30;
+alter table transacoes add column if not exists proxima_gerada boolean not null default false;
+alter table transacoes drop constraint if exists transacoes_origem_check;
+alter table transacoes add constraint transacoes_origem_check check (origem in ('manual', 'ia', 'recorrencia'));
 
 create table if not exists orcamentos (
   id uuid primary key default gen_random_uuid(),
@@ -46,9 +56,15 @@ create table if not exists tarefas (
   vencimento date,
   recorrente boolean not null default false,
   recorrencia_regra text,
+  recorrencia_intervalo_dias int not null default 30,
+  proxima_gerada boolean not null default false,
   parent_id uuid references tarefas(id) on delete cascade, -- subtarefas
   created_at timestamptz not null default now()
 );
+
+-- Se a tabela já existia antes dessas colunas:
+alter table tarefas add column if not exists recorrencia_intervalo_dias int not null default 30;
+alter table tarefas add column if not exists proxima_gerada boolean not null default false;
 
 create table if not exists habitos (
   id uuid primary key default gen_random_uuid(),

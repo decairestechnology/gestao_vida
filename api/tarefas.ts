@@ -16,17 +16,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'GET') {
     const rows = await sql`
-      select * from tarefas where user_id = ${userId} order by created_at asc
+      select * from tarefas where user_id = ${userId} order by created_at asc limit 300
     `
     return res.status(200).json(rows)
   }
 
   if (req.method === 'POST') {
-    const { titulo, tag, vencimento, prioridade, recorrente, parent_id } = req.body ?? {}
+    const { titulo, tag, vencimento, prioridade, recorrente, parent_id, recorrencia_intervalo_dias } = req.body ?? {}
     if (!titulo) return res.status(400).json({ error: 'titulo é obrigatório' })
     const [row] = await sql`
-      insert into tarefas (user_id, titulo, tag, vencimento, prioridade, recorrente, parent_id)
-      values (${userId}, ${titulo}, ${tag ?? null}, ${vencimento ?? null}, ${prioridade ?? 'media'}, ${recorrente ?? false}, ${parent_id ?? null})
+      insert into tarefas (user_id, titulo, tag, vencimento, prioridade, recorrente, parent_id, recorrencia_intervalo_dias)
+      values (${userId}, ${titulo}, ${tag ?? null}, ${vencimento ?? null}, ${prioridade ?? 'media'}, ${recorrente ?? false}, ${parent_id ?? null}, ${recorrencia_intervalo_dias ?? 30})
       returning *
     `
     return res.status(201).json(row)
