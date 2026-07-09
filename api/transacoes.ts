@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'PATCH') {
-    const { id, titulo, categoria, valor, data, descricao } = req.body ?? {}
+    const { id, titulo, categoria, valor, data, descricao, conta_id } = req.body ?? {}
     if (!id) return res.status(400).json({ error: 'id é obrigatório' })
     const [row] = await sql`
       update transacoes set
@@ -44,7 +44,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         categoria = coalesce(${categoria}, categoria),
         descricao = coalesce(${descricao}, descricao),
         valor = coalesce(${valor}, valor),
-        data = coalesce(${data}, data)
+        data = coalesce(${data}, data),
+        conta_id = coalesce(${conta_id}, conta_id)
       where id = ${id} and user_id = ${userId}
       returning *
     `

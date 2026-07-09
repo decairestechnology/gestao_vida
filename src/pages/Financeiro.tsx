@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Landmark, CreditCard, Wallet, Search, Pencil, Trash2 } from 'lucide-react'
+import { Landmark, CreditCard, Wallet, PiggyBank, Search, Pencil, Trash2 } from 'lucide-react'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -7,14 +7,23 @@ import { ProgressBar } from '../components/ui/ProgressBar'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
-import { contas, orcamentoCategorias } from '../data/mockData'
+import { orcamentoCategorias } from '../data/mockData'
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from '../data/categorias'
 
-const CONTA_ICONS = { corrente: Landmark, cartao: CreditCard, dinheiro: Wallet }
-const CONTA_STYLE = {
-  corrente: { bg: 'var(--accent)', color: 'var(--primary)' },
-  cartao: { bg: '#F5F3FF', color: 'var(--secondary)' },
-  dinheiro: { bg: '#ECFDF5', color: '#10B981' },
+const TIPOS_CONTA = [
+  { id: 'corrente', label: 'Conta corrente', icon: Landmark, bg: 'var(--accent)', color: 'var(--primary)' },
+  { id: 'cartao', label: 'Cartão de crédito', icon: CreditCard, bg: '#F5F3FF', color: 'var(--secondary)' },
+  { id: 'dinheiro', label: 'Dinheiro / carteira', icon: Wallet, bg: '#ECFDF5', color: '#10B981' },
+  { id: 'poupanca', label: 'Poupança', icon: PiggyBank, bg: '#FFFBEB', color: '#92400E' },
+] as const
+
+interface Conta {
+  id: string
+  nome: string
+  tipo: string
+  saldo: string | number
+  limite: string | number | null
+  fechamento_dia: number | null
 }
 
 interface Transacao {
@@ -24,22 +33,21 @@ interface Transacao {
   descricao?: string | null
   valor: string | number
   data: string
+  conta_id?: string | null
   recorrente?: boolean
   recorrencia_intervalo_dias?: number
 }
 
 const CAMPOS_VAZIOS = {
-  titulo: '',
-  categoria: '',
-  descricao: '',
+  titulo: '', categoria: '', descricao: '',
   tipo: 'despesa' as 'despesa' | 'receita',
-  valor: '',
-  data: new Date().toISOString().slice(0, 10),
-  recorrente: false,
-  intervalo: '30',
+  valor: '', data: new Date().toISOString().slice(0, 10),
+  conta_id: '', recorrente: false, intervalo: '30',
 }
+const CAMPOS_CONTA_VAZIOS = { nome: '', tipo: 'corrente', saldo: '0', limite: '', fechamento_dia: '' }
 
 export function Financeiro() {
+  const [contas, setContas] = useState<Conta[]>([])
   const [transacoes, setTransacoes] = useState<Transacao[]>([])
   const [carregando, setCarregando] = useState(true)
   const [busca, setBusca] = useState('')
@@ -52,12 +60,23 @@ export function Financeiro() {
   const [confirmandoExclusao, setConfirmandoExclusao] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
+  const [modalContaAberto, setModalContaAberto] = useState(false)
+  const [editandoConta, setEditandoConta] = useState<Conta | null>(null)
+  const [formConta, setFormConta] = useState(CAMPOS_CONTA_VAZIOS)
+  const [salvandoConta, setSalvandoConta] = useState(false)
+  const [confirmandoExclusaoConta, setConfirmandoExclusaoConta] = useState<string | null>(null)
+
   async function carregar() {
     setCarregando(true)
     try {
-      const rows = await apiGet<Transacao[]>('/api/transacoes')
-      setTransacoes(rows)
+      const [c, t] = await Promise.all([
+        apiGet<Conta[]>('/api/contas'),
+        apiGet<Transacao[]>('/api/transacoes'),
+      ])
+      setContas(c)
+      setTransacoes(t)
     } catch {
+      setContas([])
       setTransacoes([])
     } finally {
       setCarregando(false)
@@ -68,24 +87,28 @@ export function Financeiro() {
     carregar()
   }, [])
 
+  function saldoDaConta(conta: Conta) {
+    const soma = transacoes.filter((t) => t.conta_id === conta.id).reduce((s, t) => s + Number(t.valor), 0)
+    return Number(conta.saldo) + soma
+  }
+
   function abrirCriar() {
     setEditando(null)
-    setForm(CAMPOS_VAZIOS)
+    setForm({ ...CAMPOS_VAZIOS, conta_id: contas[0]?.id ?? '' })
+    setErro(null)
     setModalAberto(true)
   }
 
   function abrirEditar(t: Transacao) {
     setEditando(t)
     setForm({
-      titulo: t.titulo,
-      categoria: t.categoria,
-      descricao: t.descricao ?? '',
+      titulo: t.titulo, categoria: t.categoria, descricao: t.descricao ?? '',
       tipo: Number(t.valor) < 0 ? 'despesa' : 'receita',
-      valor: String(Math.abs(Number(t.valor))),
-      data: t.data.slice(0, 10),
-      recorrente: t.recorrente ?? false,
+      valor: String(Math.abs(Number(t.valor))), data: t.data.slice(0, 10),
+      conta_id: t.conta_id ?? '', recorrente: t.recorrente ?? false,
       intervalo: String(t.recorrencia_intervalo_dias ?? 30),
     })
+    setErro(null)
     setModalAberto(true)
   }
 
@@ -101,6 +124,7 @@ export function Financeiro() {
         descricao: form.descricao || null,
         valor: valorAssinado,
         data: form.data,
+        conta_id: form.conta_id || null,
         recorrente: form.recorrente,
         recorrencia_intervalo_dias: form.recorrente ? Number(form.intervalo) : null,
       }
@@ -128,6 +152,51 @@ export function Financeiro() {
     }
   }
 
+  function abrirCriarConta() {
+    setEditandoConta(null)
+    setFormConta(CAMPOS_CONTA_VAZIOS)
+    setModalContaAberto(true)
+  }
+
+  function abrirEditarConta(c: Conta) {
+    setEditandoConta(c)
+    setFormConta({
+      nome: c.nome, tipo: c.tipo, saldo: String(c.saldo),
+      limite: c.limite != null ? String(c.limite) : '',
+      fechamento_dia: c.fechamento_dia != null ? String(c.fechamento_dia) : '',
+    })
+    setModalContaAberto(true)
+  }
+
+  async function salvarConta(e: FormEvent) {
+    e.preventDefault()
+    setSalvandoConta(true)
+    try {
+      const payload = {
+        nome: formConta.nome,
+        tipo: formConta.tipo,
+        saldo: Number(formConta.saldo || 0),
+        limite: formConta.tipo === 'cartao' && formConta.limite ? Number(formConta.limite) : null,
+        fechamento_dia: formConta.tipo === 'cartao' && formConta.fechamento_dia ? Number(formConta.fechamento_dia) : null,
+      }
+      if (editandoConta) {
+        await apiPatch('/api/contas', { id: editandoConta.id, ...payload })
+      } else {
+        await apiPost('/api/contas', payload)
+      }
+      setModalContaAberto(false)
+      await carregar()
+    } finally {
+      setSalvandoConta(false)
+    }
+  }
+
+  async function excluirConta(id: string) {
+    await apiDelete('/api/contas', { id })
+    setConfirmandoExclusaoConta(null)
+    await carregar()
+  }
+
   const visiveis = transacoes.filter((t) => (t.titulo + t.categoria).toLowerCase().includes(busca.toLowerCase()))
   const recorrenciasAtivas = transacoes.filter((t) => t.recorrente)
 
@@ -140,23 +209,44 @@ export function Financeiro() {
         action={<Button variant="gradient" onClick={abrirCriar}>+ Novo lançamento</Button>}
       />
 
+      <div className="flex justify-between items-center mb-2.5">
+        <div className="text-[11.5px] font-bold uppercase tracking-wide text-muted-foreground">Contas</div>
+        <button onClick={abrirCriarConta} className="text-[12px] font-bold text-primary">+ Nova conta</button>
+      </div>
+
       <div className="grid grid-cols-3 gap-4 mb-4">
+        {!carregando && contas.length === 0 && (
+          <div className="col-span-3 text-sm text-muted-foreground py-3">Nenhuma conta cadastrada ainda — cria a primeira em "+ Nova conta".</div>
+        )}
         {contas.map((c) => {
-          const Icon = CONTA_ICONS[c.id as keyof typeof CONTA_ICONS]
-          const style = CONTA_STYLE[c.id as keyof typeof CONTA_STYLE]
+          const info = TIPOS_CONTA.find((t) => t.id === c.tipo) ?? TIPOS_CONTA[0]
+          const Icon = info.icon
+          const saldoAtual = saldoDaConta(c)
           return (
-            <Card key={c.id} className="flex gap-3 items-start">
-              <div
-                className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0"
-                style={{ background: style.bg, color: style.color }}
-              >
-                <Icon size={18} />
+            <Card key={c.id} className="flex flex-col gap-2 group">
+              <div className="flex gap-3 items-start">
+                <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: info.bg, color: info.color }}>
+                  <Icon size={18} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="mb-0.5">{c.nome}</CardTitle>
+                  <div className="text-xl font-extrabold" style={{ color: saldoAtual < 0 ? 'var(--destructive)' : undefined }}>
+                    R$ {saldoAtual.toLocaleString('pt-BR')}
+                  </div>
+                  {c.tipo === 'cartao' && c.limite != null && (
+                    <div className="text-[11.5px] text-muted-foreground mt-0.5">
+                      limite R$ {Number(c.limite).toLocaleString('pt-BR')}{c.fechamento_dia ? ` · fecha dia ${c.fechamento_dia}` : ''}
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 flex-shrink-0">
+                  <button onClick={() => abrirEditarConta(c)} className="text-muted-foreground hover:text-primary"><Pencil size={13} /></button>
+                  <button onClick={() => setConfirmandoExclusaoConta(c.id)} className="text-muted-foreground hover:text-destructive"><Trash2 size={13} /></button>
+                </div>
               </div>
-              <div>
-                <CardTitle className="mb-0.5">{c.nome}</CardTitle>
-                <div className="text-xl font-extrabold">R$ {c.saldo.toLocaleString('pt-BR')}</div>
-                {c.sub && <div className="text-[11.5px] text-muted-foreground mt-0.5">{c.sub}</div>}
-              </div>
+              {confirmandoExclusaoConta === c.id && (
+                <DeleteConfirmBar label={`Excluir "${c.nome}"?`} onCancel={() => setConfirmandoExclusaoConta(null)} onConfirm={() => excluirConta(c.id)} />
+              )}
             </Card>
           )
         })}
@@ -230,41 +320,30 @@ export function Financeiro() {
           {!carregando && visiveis.length === 0 && (
             <div className="text-sm text-muted-foreground py-4">Nenhum lançamento ainda.</div>
           )}
-          {visiveis.map((t) => (
-            <div key={t.id}>
-              <div className="flex items-center gap-3 py-2.5 border-b border-border last:border-none group">
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ background: Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }}
-                />
-                <div className="flex-1">
-                  <div className="text-[13.5px] font-semibold">{t.titulo}</div>
-                  <div className="text-[11.5px] text-muted-foreground">
-                    {t.categoria}{t.descricao ? ` · ${t.descricao}` : ''}
+          {visiveis.map((t) => {
+            const conta = contas.find((c) => c.id === t.conta_id)
+            return (
+              <div key={t.id}>
+                <div className="flex items-center gap-3 py-2.5 border-b border-border last:border-none group">
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }} />
+                  <div className="flex-1">
+                    <div className="text-[13.5px] font-semibold">{t.titulo}</div>
+                    <div className="text-[11.5px] text-muted-foreground">
+                      {t.categoria}{conta ? ` · ${conta.nome}` : ''}{t.descricao ? ` · ${t.descricao}` : ''}
+                    </div>
                   </div>
+                  <div className="text-[13px] font-bold" style={{ color: Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }}>
+                    {Number(t.valor) < 0 ? '− ' : '+ '}R$ {Math.abs(Number(t.valor))}
+                  </div>
+                  <button onClick={() => abrirEditar(t)} className="text-muted-foreground hover:text-primary flex-shrink-0"><Pencil size={14} /></button>
+                  <button onClick={() => setConfirmandoExclusao(t.id)} className="text-muted-foreground hover:text-destructive flex-shrink-0"><Trash2 size={14} /></button>
                 </div>
-                <div className="text-[13px] font-bold" style={{ color: Number(t.valor) < 0 ? 'var(--destructive)' : '#10B981' }}>
-                  {Number(t.valor) < 0 ? '− ' : '+ '}R$ {Math.abs(Number(t.valor))}
-                </div>
-                <button onClick={() => abrirEditar(t)} className="text-muted-foreground hover:text-primary flex-shrink-0">
-                  <Pencil size={14} />
-                </button>
-                <button
-                  onClick={() => setConfirmandoExclusao(t.id)}
-                  className="text-muted-foreground hover:text-destructive flex-shrink-0"
-                >
-                  <Trash2 size={14} />
-                </button>
+                {confirmandoExclusao === t.id && (
+                  <DeleteConfirmBar label={`Excluir "${t.titulo}"?`} onCancel={() => setConfirmandoExclusao(null)} onConfirm={() => excluir(t.id)} />
+                )}
               </div>
-              {confirmandoExclusao === t.id && (
-                <DeleteConfirmBar
-                  label={`Excluir "${t.titulo}"?`}
-                  onCancel={() => setConfirmandoExclusao(null)}
-                  onConfirm={() => excluir(t.id)}
-                />
-              )}
-            </div>
-          ))}
+            )
+          })}
         </Card>
 
         <Card>
@@ -327,6 +406,15 @@ export function Financeiro() {
             ))}
           </select>
 
+          <select
+            value={form.conta_id}
+            onChange={(e) => setForm({ ...form, conta_id: e.target.value })}
+            className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
+          >
+            <option value="">Sem conta associada</option>
+            {contas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+
           <textarea
             placeholder="Descrição (opcional)"
             value={form.descricao}
@@ -352,11 +440,7 @@ export function Financeiro() {
             className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
           />
           <label className="flex items-center gap-2 text-sm font-medium">
-            <input
-              type="checkbox"
-              checked={form.recorrente}
-              onChange={(e) => setForm({ ...form, recorrente: e.target.checked })}
-            />
+            <input type="checkbox" checked={form.recorrente} onChange={(e) => setForm({ ...form, recorrente: e.target.checked })} />
             Recorrente
           </label>
           {form.recorrente && (
@@ -375,6 +459,57 @@ export function Financeiro() {
           {erro && <div className="text-xs text-destructive font-semibold break-words">{erro}</div>}
           <Button type="submit" disabled={salvando}>
             {salvando ? 'Salvando...' : editando ? 'Salvar alterações' : 'Criar lançamento'}
+          </Button>
+        </form>
+      </Modal>
+
+      <Modal open={modalContaAberto} title={editandoConta ? 'Editar conta' : 'Nova conta'} onClose={() => setModalContaAberto(false)}>
+        <form onSubmit={salvarConta} className="flex flex-col gap-3">
+          <input
+            required
+            placeholder="Nome (ex: Nubank, Carteira)"
+            value={formConta.nome}
+            onChange={(e) => setFormConta({ ...formConta, nome: e.target.value })}
+            className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
+          />
+          <select
+            value={formConta.tipo}
+            onChange={(e) => setFormConta({ ...formConta, tipo: e.target.value })}
+            className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
+          >
+            {TIPOS_CONTA.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+          </select>
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Saldo inicial"
+            value={formConta.saldo}
+            onChange={(e) => setFormConta({ ...formConta, saldo: e.target.value })}
+            className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
+          />
+          {formConta.tipo === 'cartao' && (
+            <>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Limite do cartão (opcional)"
+                value={formConta.limite}
+                onChange={(e) => setFormConta({ ...formConta, limite: e.target.value })}
+                className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
+              />
+              <input
+                type="number"
+                min="1"
+                max="31"
+                placeholder="Dia de fechamento da fatura (opcional)"
+                value={formConta.fechamento_dia}
+                onChange={(e) => setFormConta({ ...formConta, fechamento_dia: e.target.value })}
+                className="bg-muted border border-border rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary"
+              />
+            </>
+          )}
+          <Button type="submit" disabled={salvandoConta}>
+            {salvandoConta ? 'Salvando...' : editandoConta ? 'Salvar alterações' : 'Criar conta'}
           </Button>
         </form>
       </Modal>
