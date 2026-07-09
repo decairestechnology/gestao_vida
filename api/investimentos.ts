@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { requireUser } from './_auth.js'
 import { sql } from './_db.js'
+import { hojeBrasilia } from './_date.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   let userId: string
@@ -70,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const [aporte] = await sql`
       insert into investimentos_aportes (user_id, ativo_id, valor, data)
-      values (${userId}, ${ativo_id}, ${valor}, ${data ?? new Date().toISOString().slice(0, 10)})
+      values (${userId}, ${ativo_id}, ${valor}, ${data ?? hojeBrasilia()})
       returning *
     `
     const [ativoAtualizado] = await sql`

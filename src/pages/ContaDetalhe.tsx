@@ -7,6 +7,7 @@ import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from '../data/categorias'
+import { hojeBrasilia } from '../lib/date'
 
 const TIPOS_CONTA = [
   { id: 'corrente', label: 'Conta corrente', icon: Landmark, bg: 'var(--accent)', color: 'var(--primary)' },
@@ -36,7 +37,7 @@ interface Transacao {
 const CAMPOS_VAZIOS = {
   titulo: '', categoria: '', descricao: '',
   tipo: 'despesa' as 'despesa' | 'receita',
-  valor: '', data: new Date().toISOString().slice(0, 10),
+  valor: '', data: hojeBrasilia(),
 }
 
 export function ContaDetalhe() {

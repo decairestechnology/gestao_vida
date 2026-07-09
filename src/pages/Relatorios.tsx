@@ -6,6 +6,7 @@ import { PageHeader } from '../components/layout/PageHeader'
 import { Card, CardTitle } from '../components/ui/Card'
 import { ProgressBar } from '../components/ui/ProgressBar'
 import { apiGet, apiPost } from '../lib/api'
+import { hojeBrasilia, deslocarDias } from '../lib/date'
 import type { DashboardData } from '../types/dashboard'
 
 const PERIODOS = ['3 meses', '6 meses'] as const
@@ -33,10 +34,11 @@ export function Relatorios() {
   const ativos = data?.investimentos.ativos ?? []
 
   const numMeses = periodo === '3 meses' ? 3 : 6
+  const hojeStr = hojeBrasilia()
   const mesesChave: string[] = Array.from({ length: numMeses }, (_, i) => {
-    const d = new Date()
-    d.setDate(1)
-    d.setMonth(d.getMonth() - (numMeses - 1 - i))
+    const [y, m] = hojeStr.split('-').map(Number)
+    const d = new Date(Date.UTC(y, m - 1, 1))
+    d.setUTCMonth(d.getUTCMonth() - (numMeses - 1 - i))
     return d.toISOString().slice(0, 7)
   })
 
@@ -46,7 +48,7 @@ export function Relatorios() {
     return { mes, chave, valor }
   })
 
-  const mesAtual = new Date().toISOString().slice(0, 7)
+  const mesAtual = hojeStr.slice(0, 7)
   const gastosMesAtual = transacoes.filter((t) => t.data.slice(0, 7) === mesAtual && Number(t.valor) < 0)
   const totalGastoMes = gastosMesAtual.reduce((s, t) => s + Math.abs(Number(t.valor)), 0)
   const porCategoria = new Map<string, number>()
@@ -58,10 +60,10 @@ export function Relatorios() {
   function calcularAderencia(checks: string[]): number {
     const dias = 14
     let feitos = 0
-    const cursor = new Date()
+    let cursor = hojeStr
     for (let i = 0; i < dias; i++) {
-      if (checks.includes(cursor.toISOString().slice(0, 10))) feitos++
-      cursor.setDate(cursor.getDate() - 1)
+      if (checks.includes(cursor)) feitos++
+      cursor = deslocarDias(cursor, -1)
     }
     return Math.round((feitos / dias) * 100)
   }

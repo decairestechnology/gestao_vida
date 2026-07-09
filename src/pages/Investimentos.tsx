@@ -8,6 +8,7 @@ import { ProgressBar } from '../components/ui/ProgressBar'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from '../lib/api'
+import { hojeBrasilia } from '../lib/date'
 
 interface Ativo {
   id: string
@@ -25,7 +26,7 @@ const CLASSES = [
   { id: 'reserva_cripto', label: 'Reserva / cripto', cor: 'var(--destructive)' },
 ] as const
 
-const CAMPOS_VAZIOS = { ativoId: 'novo', nomeNovo: '', classeNovo: 'renda_fixa', valor: '', data: new Date().toISOString().slice(0, 10) }
+const CAMPOS_VAZIOS = { ativoId: 'novo', nomeNovo: '', classeNovo: 'renda_fixa', valor: '', data: hojeBrasilia() }
 
 export function Investimentos() {
   const [ativos, setAtivos] = useState<Ativo[]>([])

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Landmark, CreditCard, Wallet, PiggyBank, Search, Pencil, Trash2, ChevronRight } from 'lucide-react'
+import { Landmark, CreditCard, Wallet, PiggyBank, Search, Pencil, Trash2 } from 'lucide-react'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -10,6 +10,7 @@ import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
 import { orcamentoCategorias } from '../data/mockData'
 import { CATEGORIAS_DESPESA, CATEGORIAS_RECEITA } from '../data/categorias'
+import { hojeBrasilia } from '../lib/date'
 
 const TIPOS_CONTA = [
   { id: 'corrente', label: 'Conta corrente', icon: Landmark, bg: 'var(--accent)', color: 'var(--primary)' },
@@ -42,7 +43,7 @@ interface Transacao {
 const CAMPOS_VAZIOS = {
   titulo: '', categoria: '', descricao: '',
   tipo: 'despesa' as 'despesa' | 'receita',
-  valor: '', data: new Date().toISOString().slice(0, 10),
+  valor: '', data: hojeBrasilia(),
   conta_id: '', recorrente: false, intervalo: '30',
 }
 const CAMPOS_CONTA_VAZIOS = { nome: '', tipo: 'corrente', saldo: '0', limite: '', fechamento_dia: '' }
@@ -188,39 +189,41 @@ export function Financeiro() {
         action={<Button variant="gradient" onClick={abrirCriar}>+ Novo lançamento</Button>}
       />
 
-      <Card className="mb-4">
-        <div className="flex justify-between items-center mb-1">
-          <CardTitle className="mb-0">Contas</CardTitle>
-          <button onClick={abrirCriarConta} className="text-[12px] font-bold text-primary">+ Nova conta</button>
-        </div>
+      <div className="flex justify-between items-center mb-2.5">
+        <div className="text-[11.5px] font-bold uppercase tracking-wide text-muted-foreground">Contas</div>
+        <button onClick={abrirCriarConta} className="text-[12px] font-bold text-primary">+ Nova conta</button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4 mb-4">
         {!carregando && contas.length === 0 && (
-          <div className="text-sm text-muted-foreground py-3">Nenhuma conta cadastrada ainda — cria a primeira em "+ Nova conta".</div>
+          <div className="col-span-3 text-sm text-muted-foreground py-3">Nenhuma conta cadastrada ainda — cria a primeira em "+ Nova conta".</div>
         )}
         {contas.map((c) => {
           const info = TIPOS_CONTA.find((t) => t.id === c.tipo) ?? TIPOS_CONTA[0]
           const Icon = info.icon
           const saldoAtual = saldoDaConta(c)
           return (
-            <button
-              key={c.id}
-              onClick={() => navigate(`/financeiro/conta/${c.id}`)}
-              className="w-full flex items-center gap-3 py-2.5 border-b border-border last:border-none hover:bg-muted -mx-1 px-1 rounded-lg transition-colors text-left"
-            >
-              <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: info.bg, color: info.color }}>
-                <Icon size={16} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[13.5px] font-semibold">{c.nome}</div>
-                <div className="text-[11px] text-muted-foreground">{info.label}</div>
-              </div>
-              <div className="text-[14px] font-bold flex-shrink-0" style={{ color: saldoAtual < 0 ? 'var(--destructive)' : undefined }}>
-                R$ {saldoAtual.toLocaleString('pt-BR')}
-              </div>
-              <ChevronRight size={16} className="text-muted-foreground flex-shrink-0" />
+            <button key={c.id} onClick={() => navigate(`/financeiro/conta/${c.id}`)} className="text-left">
+              <Card className="flex gap-3 items-start hover:border-primary transition-colors cursor-pointer">
+                <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: info.bg, color: info.color }}>
+                  <Icon size={18} />
+                </div>
+                <div className="min-w-0">
+                  <CardTitle className="mb-0.5">{c.nome}</CardTitle>
+                  <div className="text-xl font-extrabold" style={{ color: saldoAtual < 0 ? 'var(--destructive)' : undefined }}>
+                    R$ {saldoAtual.toLocaleString('pt-BR')}
+                  </div>
+                  {c.tipo === 'cartao' && c.limite != null && (
+                    <div className="text-[11.5px] text-muted-foreground mt-0.5">
+                      fatura aberta · fecha {c.fechamento_dia ?? '—'} · limite R$ {Number(c.limite).toLocaleString('pt-BR')}
+                    </div>
+                  )}
+                </div>
+              </Card>
             </button>
           )
         })}
-      </Card>
+      </div>
 
       <Card className="mb-4">
         <CardTitle>Recorrências fixas</CardTitle>

@@ -6,19 +6,20 @@ import { Card, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { ProgressBar } from '../components/ui/ProgressBar'
 import { apiGet, apiPatch } from '../lib/api'
+import { hojeBrasilia, deslocarDias } from '../lib/date'
 import type { DashboardData } from '../types/dashboard'
 
 const PRIORIDADE_BADGE = { alta: 'error', media: 'warning', baixa: 'neutral' } as const
 const CORES_META = ['var(--primary)', 'var(--secondary)', '#F59E0B']
-const hoje = new Date().toISOString().slice(0, 10)
+const hoje = hojeBrasilia()
 
 function calcularStreak(checks: string[]): number {
   const set = new Set(checks)
   let streak = 0
-  const cursor = new Date()
-  while (set.has(cursor.toISOString().slice(0, 10))) {
+  let cursor = hoje
+  while (set.has(cursor)) {
     streak++
-    cursor.setDate(cursor.getDate() - 1)
+    cursor = deslocarDias(cursor, -1)
   }
   return streak
 }

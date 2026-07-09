@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireUser } from './_auth.js'
 import { sql } from './_db.js'
+import { hojeBrasilia } from './_date.js'
 
 // ANTHROPIC_API_KEY vem do console.anthropic.com → API Keys
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
@@ -33,7 +34,7 @@ Regras:
 - "dados": preenche só os campos relevantes pro que foi pedido; o resto fica null. Em "criar" é o registro novo; em "editar" são só os campos que devem mudar.
 - "valor" de transação é negativo pra gasto, positivo pra receita.
 - Se não conseguir classificar com segurança em nenhuma das três ações, use "indefinido" com um "motivo" curto explicando por quê. Nunca force uma resposta.
-- A data de hoje é ${new Date().toISOString().slice(0, 10)}.`
+- A data de hoje é ${hojeBrasilia()}.`
 
 const ENTIDADE_VALIDA = ['transacao', 'tarefa', 'nota'] as const
 type Entidade = typeof ENTIDADE_VALIDA[number]
@@ -102,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         await sql`
           insert into transacoes (user_id, titulo, categoria, valor, data, origem)
-          values (${userId}, ${d.titulo}, ${d.categoria}, ${d.valor}, ${d.data ?? new Date().toISOString().slice(0, 10)}, 'ia')
+          values (${userId}, ${d.titulo}, ${d.categoria}, ${d.valor}, ${d.data ?? hojeBrasilia()}, 'ia')
         `
       } else if (parsed.entidade === 'tarefa') {
         if (!d.titulo) {

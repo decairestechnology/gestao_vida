@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiPut, apiDelete } from '../lib/api'
+import { hojeBrasilia, deslocarDias } from '../lib/date'
 
 interface Habito {
   id: string
@@ -18,20 +19,17 @@ interface Habito {
 const CAMPOS_VAZIOS = { nome: '', frequencia: 'diario', tag: '' }
 
 function ultimosDias(n: number): string[] {
-  return Array.from({ length: n }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() - (n - 1 - i))
-    return d.toISOString().slice(0, 10)
-  })
+  const hoje = hojeBrasilia()
+  return Array.from({ length: n }, (_, i) => deslocarDias(hoje, -(n - 1 - i)))
 }
 
 function calcularStreak(checks: string[]): number {
   const setChecks = new Set(checks)
   let streak = 0
-  const cursor = new Date()
-  while (setChecks.has(cursor.toISOString().slice(0, 10))) {
+  let cursor = hojeBrasilia()
+  while (setChecks.has(cursor)) {
     streak++
-    cursor.setDate(cursor.getDate() - 1)
+    cursor = deslocarDias(cursor, -1)
   }
   return streak
 }
@@ -47,7 +45,7 @@ export function Habitos() {
   const [confirmandoExclusao, setConfirmandoExclusao] = useState<string | null>(null)
 
   const dias = ultimosDias(14)
-  const hoje = new Date().toISOString().slice(0, 10)
+  const hoje = hojeBrasilia()
 
   async function carregar() {
     setCarregando(true)

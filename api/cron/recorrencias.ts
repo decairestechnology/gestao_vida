@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { sql } from '../_db.js'
+import { hojeBrasilia } from '../_date.js'
 
 // Roda 1x por dia (configurado em vercel.json). A Vercel manda
 // "Authorization: Bearer $CRON_SECRET" automaticamente quando CRON_SECRET
@@ -17,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     where recorrente = true and status = 'concluida' and proxima_gerada = false
   `
   for (const t of tarefasParaRenovar) {
-    const baseData = t.vencimento ? new Date(t.vencimento) : new Date()
+    const baseData = t.vencimento ? new Date(t.vencimento) : new Date(`${hojeBrasilia()}T00:00:00Z`)
     const novaData = new Date(baseData)
     novaData.setDate(novaData.getDate() + (t.recorrencia_intervalo_dias ?? 30))
 

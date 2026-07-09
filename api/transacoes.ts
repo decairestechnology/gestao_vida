@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { requireUser } from './_auth.js'
 import { sql } from './_db.js'
+import { hojeBrasilia } from './_date.js'
 
 // GET    /api/transacoes → lista as transações do usuário logado
 // POST   /api/transacoes → cria uma transação manual
@@ -29,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const [row] = await sql`
       insert into transacoes (user_id, titulo, categoria, descricao, valor, data, conta_id, origem, recorrente, recorrencia_intervalo_dias)
-      values (${userId}, ${titulo}, ${categoria}, ${descricao ?? null}, ${valor}, ${data ?? new Date().toISOString().slice(0, 10)}, ${conta_id ?? null}, 'manual', ${recorrente ?? false}, ${recorrencia_intervalo_dias ?? 30})
+      values (${userId}, ${titulo}, ${categoria}, ${descricao ?? null}, ${valor}, ${data ?? hojeBrasilia()}, ${conta_id ?? null}, 'manual', ${recorrente ?? false}, ${recorrencia_intervalo_dias ?? 30})
       returning *
     `
     return res.status(201).json(row)

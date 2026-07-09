@@ -7,6 +7,7 @@ import { Badge } from '../components/ui/Badge'
 import { Modal } from '../components/ui/Modal'
 import { DeleteConfirmBar } from '../components/ui/DeleteConfirmBar'
 import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api'
+import { hojeBrasilia, deslocarDias } from '../lib/date'
 
 interface Tarefa {
   id: string
@@ -33,8 +34,8 @@ const CAMPOS_VAZIOS = { titulo: '', tag: '', vencimento: '', prioridade: 'media'
 function calcularAba(t: Tarefa): string {
   if (t.status === 'concluida') return 'concluida'
   if (!t.vencimento) return 'semprazo'
-  const hoje = new Date().toISOString().slice(0, 10)
-  const emSeteDias = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
+  const hoje = hojeBrasilia()
+  const emSeteDias = deslocarDias(hoje, 7)
   const venc = t.vencimento.slice(0, 10)
   if (venc <= hoje) return 'hoje'
   if (venc <= emSeteDias) return 'semana'
