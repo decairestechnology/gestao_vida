@@ -1,5 +1,5 @@
 import { useState, type KeyboardEvent } from 'react'
-import { Sparkles, Sun, Moon, LogOut, Loader2 } from 'lucide-react'
+import { Sparkles, Sun, Moon, LogOut, Loader2, Menu } from 'lucide-react'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 
@@ -14,7 +14,11 @@ const LABELS_ACAO: Record<string, string> = {
   excluir: 'excluiu',
 }
 
-export function Topbar() {
+interface TopbarProps {
+  onAbrirMenu: () => void
+}
+
+export function Topbar({ onAbrirMenu }: TopbarProps) {
   const { theme, toggleTheme } = useTheme()
   const { logout, getToken } = useAuth()
   const [texto, setTexto] = useState('')
@@ -54,8 +58,15 @@ export function Topbar() {
   }
 
   return (
-    <header className="flex items-center gap-3 px-7 py-4 border-b border-border bg-card">
-      <div className="flex-1 flex items-center gap-2.5 bg-muted border border-border rounded-lg px-3.5 py-2.5">
+    <header className="flex items-center gap-3 px-4 md:px-7 py-4 border-b border-border bg-card">
+      <button
+        onClick={onAbrirMenu}
+        className="w-9 h-9 rounded-lg border border-border bg-muted flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-primary transition-colors flex-shrink-0 md:hidden"
+      >
+        <Menu size={17} />
+      </button>
+
+      <div className="flex-1 flex items-center gap-2.5 bg-muted border border-border rounded-lg px-3.5 py-2.5 min-w-0">
         {enviando ? (
           <Loader2 size={16} className="text-primary flex-shrink-0 animate-spin" />
         ) : (
@@ -71,7 +82,7 @@ export function Topbar() {
           className="flex-1 bg-transparent outline-none text-[13.5px] placeholder:text-muted-foreground"
         />
         <span
-          className="text-[10.5px] font-bold rounded px-2 py-1 flex-shrink-0 max-w-[280px] truncate"
+          className="text-[10.5px] font-bold rounded px-2 py-1 flex-shrink-0 max-w-[110px] sm:max-w-[280px] truncate"
           style={feedbackErro
             ? { color: '#991B1B', background: '#FEF2F2' }
             : { color: 'var(--secondary)', background: '#F5F3FF' }}
