@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Landmark, CreditCard, Wallet, PiggyBank, Search, Pencil, Trash2 } from 'lucide-react'
+import { Landmark, CreditCard, Wallet, PiggyBank, Search, Pencil, Trash2, Plus } from 'lucide-react'
 import { PageHeader } from '../components/layout/PageHeader'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -153,8 +153,8 @@ export function Financeiro() {
     }
   }
 
-  function abrirCriarConta() {
-    setFormConta(CAMPOS_CONTA_VAZIOS)
+  function abrirCriarConta(tipo?: string) {
+    setFormConta({ ...CAMPOS_CONTA_VAZIOS, tipo: tipo ?? 'corrente' })
     setModalContaAberto(true)
   }
 
@@ -191,36 +191,55 @@ export function Financeiro() {
 
       <div className="flex justify-between items-center mb-2.5">
         <div className="text-[11.5px] font-bold uppercase tracking-wide text-muted-foreground">Contas</div>
-        <button onClick={abrirCriarConta} className="text-[12px] font-bold text-primary">+ Nova conta</button>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-4">
-        {!carregando && contas.length === 0 && (
-          <div className="col-span-3 text-sm text-muted-foreground py-3">Nenhuma conta cadastrada ainda — cria a primeira em "+ Nova conta".</div>
-        )}
-        {contas.map((c) => {
-          const info = TIPOS_CONTA.find((t) => t.id === c.tipo) ?? TIPOS_CONTA[0]
-          const Icon = info.icon
-          const saldoAtual = saldoDaConta(c)
+        {TIPOS_CONTA.filter((t) => t.id !== 'poupanca' || contas.some((c) => c.tipo === 'poupanca')).map((tipo) => {
+          const Icon = tipo.icon
+          const contasDoTipo = contas.filter((c) => c.tipo === tipo.id)
+          const totalTipo = contasDoTipo.reduce((s, c) => s + saldoDaConta(c), 0)
           return (
-            <button key={c.id} onClick={() => navigate(`/financeiro/conta/${c.id}`)} className="text-left">
-              <Card className="flex gap-3 items-start hover:border-primary transition-colors cursor-pointer">
-                <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: info.bg, color: info.color }}>
-                  <Icon size={18} />
-                </div>
-                <div className="min-w-0">
-                  <CardTitle className="mb-0.5">{c.nome}</CardTitle>
-                  <div className="text-xl font-extrabold" style={{ color: saldoAtual < 0 ? 'var(--destructive)' : undefined }}>
-                    R$ {saldoAtual.toLocaleString('pt-BR')}
+            <Card key={tipo.id} className="flex flex-col">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0" style={{ background: tipo.bg, color: tipo.color }}>
+                    <Icon size={16} />
                   </div>
-                  {c.tipo === 'cartao' && c.limite != null && (
-                    <div className="text-[11.5px] text-muted-foreground mt-0.5">
-                      fatura aberta · fecha {c.fechamento_dia ?? '—'} · limite R$ {Number(c.limite).toLocaleString('pt-BR')}
-                    </div>
-                  )}
+                  <CardTitle className="mb-0">{tipo.label}</CardTitle>
                 </div>
-              </Card>
-            </button>
+                <button onClick={() => abrirCriarConta(tipo.id)} className="text-muted-foreground hover:text-primary flex-shrink-0" title={`Nova conta ${tipo.label}`}>
+                  <Plus size={16} />
+                </button>
+              </div>
+
+              <div className="text-2xl font-extrabold mb-2" style={{ color: totalTipo < 0 ? 'var(--destructive)' : undefined }}>
+                R$ {totalTipo.toLocaleString('pt-BR')}
+              </div>
+
+              {contasDoTipo.length === 0 && (
+                <div className="text-xs text-muted-foreground py-1">Nenhuma conta desse tipo ainda.</div>
+              )}
+              {contasDoTipo.map((c) => {
+                const saldoAtual = saldoDaConta(c)
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => navigate(`/financeiro/conta/${c.id}`)}
+                    className="flex items-center justify-between py-1.5 border-t border-border first:border-t-0 text-left hover:opacity-70"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-[12.5px] font-semibold truncate">{c.nome}</div>
+                      {c.tipo === 'cartao' && c.limite != null && (
+                        <div className="text-[10.5px] text-muted-foreground">fecha {c.fechamento_dia ?? '—'} · limite R$ {Number(c.limite).toLocaleString('pt-BR')}</div>
+                      )}
+                    </div>
+                    <div className="text-[12.5px] font-bold flex-shrink-0" style={{ color: saldoAtual < 0 ? 'var(--destructive)' : undefined }}>
+                      R$ {saldoAtual.toLocaleString('pt-BR')}
+                    </div>
+                  </button>
+                )
+              })}
+            </Card>
           )
         })}
       </div>
