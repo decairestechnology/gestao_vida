@@ -106,31 +106,8 @@ export function Configuracoes() {
               className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
             />
           </div>
-          <div className="col-span-2">
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">URL da logo (opcional — deixa vazio pra usar a padrão)</label>
-            <input
-              value={formMarca.logoUrl ?? ''}
-              onChange={(e) => setFormMarca({ ...formMarca, logoUrl: e.target.value || null })}
-              placeholder="https://..."
-              className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-          </div>
-          <div className="col-span-2">
-            <label className="text-xs font-semibold text-muted-foreground block mb-1">
-              Tamanho da logo: {formMarca.logoTamanho}px
-            </label>
-            <input
-              type="range"
-              min={32}
-              max={140}
-              step={4}
-              value={formMarca.logoTamanho}
-              onChange={(e) => setFormMarca({ ...formMarca, logoTamanho: Number(e.target.value) })}
-              className="w-full"
-            />
-          </div>
           <div className="col-span-2 flex items-center gap-4">
-            <div style={{ width: formMarca.logoTamanho, height: formMarca.logoTamanho }} className="rounded-2xl overflow-hidden border border-border flex-shrink-0">
+            <div style={{ width: 72, height: 72 }} className="rounded-2xl overflow-hidden border border-border flex-shrink-0">
               <img src={formMarca.logoUrl || '/logo.png'} alt="Pré-visualização" className="w-full h-full object-contain" />
             </div>
             <Button type="submit" disabled={salvandoMarca}>{salvandoMarca ? 'Salvando...' : 'Salvar marca'}</Button>
