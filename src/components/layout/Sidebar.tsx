@@ -36,7 +36,6 @@ export function Sidebar({ aberta, fechar }: SidebarProps) {
     })
   }
 
-  const logoTamanho = colapsada ? 36 : marca.logoTamanho
 
   return (
     <>
@@ -70,12 +69,12 @@ export function Sidebar({ aberta, fechar }: SidebarProps) {
           <X size={18} />
         </button>
 
-        <div className={clsx('flex flex-col items-center gap-1.5 pb-5 pt-1.5', colapsada ? 'px-0' : 'px-2')}>
-          <div style={{ width: logoTamanho, height: logoTamanho }} className="rounded-2xl overflow-hidden flex-shrink-0 transition-all duration-200">
+        <div className={clsx('flex items-center gap-2.5 pb-5 pt-1.5', colapsada ? 'px-0 justify-center' : 'px-2')}>
+          <div style={{ width: colapsada ? 36 : 72, height: colapsada ? 36 : 72 }} className="rounded-2xl overflow-hidden flex-shrink-0 transition-all duration-200">
             <img src={marca.logoUrl ?? '/logo.png'} alt="Logo" className="w-full h-full object-contain" />
           </div>
           {!colapsada && (
-            <div className="text-center leading-tight">
+            <div className="leading-tight">
               <div className="font-bold text-sm">{marca.nome}</div>
               <div className="text-[10.5px] text-muted-foreground font-semibold">{marca.subtitulo}</div>
             </div>
