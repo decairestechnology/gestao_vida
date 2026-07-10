@@ -106,10 +106,7 @@ export function Configuracoes() {
               className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
             />
           </div>
-          <div className="col-span-2 flex items-center gap-4">
-            <div style={{ width: 72, height: 72 }} className="rounded-2xl overflow-hidden border border-border flex-shrink-0">
-              <img src={formMarca.logoUrl || '/logo.png'} alt="Pré-visualização" className="w-full h-full object-contain" />
-            </div>
+          <div className="col-span-2">
             <Button type="submit" disabled={salvandoMarca}>{salvandoMarca ? 'Salvando...' : 'Salvar marca'}</Button>
           </div>
         </form>
